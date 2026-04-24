@@ -424,6 +424,10 @@ function renderEditor() {
         <label class="hint">× <input type="number" min="1" value="${ex.repeat || 1}" data-k="repeat" /> sets</label>
         <button class="danger" data-k="del">✕</button>
       </div>
+      <label class="row exercise-opt" style="gap: 0.4rem; margin-bottom: 0.5rem;">
+        <input type="checkbox" data-k="skipLast" ${ex.skipLastRest ? 'checked' : ''} />
+        <span>Skip last rest</span>
+      </label>
       <div class="steps"></div>
       <div class="row">
         <button data-add="timed">+ Timed</button>
@@ -433,6 +437,7 @@ function renderEditor() {
     `;
     el.querySelector('[data-k="name"]').addEventListener('input', (e) => { ex.name = e.target.value; });
     el.querySelector('[data-k="repeat"]').addEventListener('input', (e) => { ex.repeat = Math.max(1, parseInt(e.target.value) || 1); });
+    el.querySelector('[data-k="skipLast"]').addEventListener('change', (e) => { ex.skipLastRest = e.target.checked; });
     el.querySelector('[data-k="del"]').addEventListener('click', () => {
       state.editingTraining.exercises.splice(exIdx, 1);
       renderEditor();
@@ -525,13 +530,18 @@ document.getElementById('add-exercise').addEventListener('click', () => {
   renderEditor();
 });
 
-document.getElementById('save-training').addEventListener('click', async () => {
+async function saveCurrentTraining() {
   const t = state.editingTraining;
+  if (!t) return;
   t.name = document.getElementById('editor-name').value.trim() || 'Untitled';
   delete t._new;
   await idbPut('trainings', t);
-  toast('Saved');
   await loadTrainings();
+}
+
+document.getElementById('editor-back').addEventListener('click', async () => {
+  await saveCurrentTraining();
+  toast('Saved');
   switchView('trainings');
 });
 
@@ -707,7 +717,14 @@ function expandSteps(training) {
   for (const ex of training.exercises || []) {
     const repeat = Math.max(1, ex.repeat || 1);
     for (let r = 0; r < repeat; r++) {
-      for (const st of ex.steps || []) {
+      let steps = ex.steps || [];
+      // On the last iteration, optionally drop trailing rest steps
+      if (ex.skipLastRest && r === repeat - 1) {
+        let end = steps.length;
+        while (end > 0 && steps[end - 1].type === 'rest') end--;
+        steps = steps.slice(0, end);
+      }
+      for (const st of steps) {
         out.push({
           exerciseName: ex.name || 'Exercise',
           setIndex: r + 1,
@@ -872,7 +889,7 @@ function updateTimer() {
 }
 
 document.getElementById('run-next').addEventListener('click', () => {
-  if (!state.run) return;
+  if (!state.run || state.run.finished) return;
   recordStepResult();
   enterStep(state.run.index + 1);
 });
@@ -898,7 +915,8 @@ document.getElementById('stop-run').addEventListener('click', async () => {
 async function finishRun() {
   clearRunTimer();
   const run = state.run;
-  if (!run) return;
+  if (!run || run.finished) return;
+  run.finished = true;
   const endedAt = Date.now();
   const entry = {
     id: uid(),

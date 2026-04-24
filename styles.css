@@ -187,6 +187,14 @@ input:focus, select:focus { outline: 1px solid var(--accent2); }
 }
 
 .exercise-head { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+.exercise-opt {
+  font-size: 0.85rem;
+  color: var(--muted);
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.exercise-opt input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
 .exercise-head input[type="text"] { flex: 1; }
 .exercise-head input[type="number"] { width: 70px; }
 

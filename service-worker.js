@@ -1,5 +1,5 @@
 // Bump this version string to force clients to re-cache after you update files.
-const CACHE = 'training-timer-v23';
+const CACHE = 'training-timer-v25';
 const ASSETS = [
   './',
   './index.html',
