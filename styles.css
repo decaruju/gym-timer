@@ -306,9 +306,13 @@ input:focus, select:focus { outline: 1px solid var(--accent2); }
   border-radius: 6px;
   font-size: 0.85rem;
 }
-.step-log li .actual { color: var(--accent); font-variant-numeric: tabular-nums; }
-.step-log li .planned { color: var(--muted); font-size: 0.75rem; }
-.step-log li.partial { opacity: 0.6; }
+.step-log li .actual { color: var(--text); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 0.3rem; }
+.step-log li .planned { color: var(--muted); font-size: 0.75rem; font-weight: 400; }
+.step-log li .step-icon { font-size: 0.85rem; }
+.step-log li .step-icon.ok { color: var(--accent); }
+.step-log li .step-icon.partial { color: #fbbf24; }
+.step-log li.partial { opacity: 0.85; }
+.step-log li.partial .actual { color: #fbbf24; }
 .history-entry { cursor: pointer; }
 .history-entry:active { transform: scale(0.99); }
 

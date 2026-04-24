@@ -522,6 +522,15 @@ function scheduleReminders() {
 }
 
 // ====== Run ======
+function snapshotTraining(training) {
+  // Deep clone via JSON to freeze the planned structure into the history entry.
+  return JSON.parse(JSON.stringify({
+    id: training.id,
+    name: training.name,
+    exercises: training.exercises || [],
+  }));
+}
+
 function expandSteps(training) {
   const out = [];
   for (const ex of training.exercises || []) {
@@ -633,6 +642,7 @@ function enterStep(i) {
     input?.focus();
     input?.select();
   }
+  run.stepStartedAt = Date.now();
 }
 
 function recordStepResult() {
@@ -641,12 +651,14 @@ function recordStepResult() {
   const i = run.index;
   const cur = run.steps[i];
   if (!cur) return;
+  const elapsedSec = run.stepStartedAt ? Math.max(0, Math.round((Date.now() - run.stepStartedAt) / 1000)) : 0;
   const entry = {
     exerciseName: cur.exerciseName,
     setIndex: cur.setIndex,
     setTotal: cur.setTotal,
     label: cur.label || (cur.type === 'rest' ? 'Rest' : cur.exerciseName),
     type: cur.type,
+    elapsedSec,
   };
   if (cur.type === 'reps') {
     const input = document.getElementById('reps-actual');
@@ -703,6 +715,8 @@ async function finishRun() {
     id: uid(),
     trainingId: run.training.id,
     trainingName: run.training.name,
+    trainingSnapshot: snapshotTraining(run.training),
+    plannedSteps: run.steps.map((s) => ({ ...s })),
     startedAt: run.startedAt,
     endedAt,
     durationSec: Math.round((endedAt - run.startedAt) / 1000),
@@ -750,6 +764,8 @@ async function abortRun() {
     id: uid(),
     trainingId: run.training.id,
     trainingName: run.training.name,
+    trainingSnapshot: snapshotTraining(run.training),
+    plannedSteps: run.steps.map((s) => ({ ...s })),
     startedAt: run.startedAt,
     endedAt,
     durationSec: Math.round((endedAt - run.startedAt) / 1000),
@@ -954,19 +970,30 @@ function showSessionDetail(h) {
   const dur = mm > 0 ? `${mm}m ${ss}s` : `${ss}s`;
 
   const log = h.log || [];
-  const items = log.length ? log.map((s, idx) => {
+  const items = log.length ? log.map((s) => {
     const isReps = s.type === 'reps';
-    const value = isReps ? `${s.actualReps} reps` : formatSec(s.actualSec || 0);
-    const planned = isReps
-      ? (s.actualReps !== s.plannedReps ? `planned ${s.plannedReps}` : '')
-      : (s.actualSec < (s.plannedSec || 0) ? `planned ${formatSec(s.plannedSec)}` : '');
-    const partial = (isReps && s.actualReps < s.plannedReps) || (!isReps && s.actualSec < (s.plannedSec || 0));
+    const planned = isReps ? s.plannedReps : (s.plannedSec || 0);
+    const actual = isReps ? s.actualReps : (s.actualSec || 0);
+    const success = actual >= planned;
+    const partial = !success;
+
+    let main;
+    if (success) {
+      main = isReps ? `${actual} reps` : formatSec(actual);
+    } else {
+      main = isReps
+        ? `${actual}/${planned} reps`
+        : `${formatSec(actual)}/${formatSec(planned)}`;
+    }
+    // For reps, also show how long it took to complete
+    const repsTime = isReps && s.elapsedSec ? ` <span class="planned">in ${formatSec(s.elapsedSec)}</span>` : '';
+    const icon = success ? '<span class="step-icon ok">✓</span>' : '<span class="step-icon partial">⚠</span>';
     const setLabel = s.setTotal > 1 ? ` <span class="hint">(set ${s.setIndex}/${s.setTotal})</span>` : '';
     return `
       <li class="${partial ? 'partial' : ''}">
         <span class="pill ${s.type}">${s.type}</span>
         <span>${escapeHtml(s.label)}${setLabel}</span>
-        <span class="actual">${value}${planned ? ` <span class="planned">${planned}</span>` : ''}</span>
+        <span class="actual">${main}${repsTime} ${icon}</span>
       </li>
     `;
   }).join('') : '<p class="hint">No step-level data recorded for this session.</p>';
