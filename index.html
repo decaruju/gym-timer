@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Training Timer</title>
-  <link rel="stylesheet" href="styles.css?v=18" />
-  <link rel="manifest" href="manifest.json?v=18" crossorigin="use-credentials" />
+  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="manifest" href="manifest.json?v=19" crossorigin="use-credentials" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="theme-color" content="#0f1115" />
@@ -15,7 +15,7 @@
 </head>
 <body>
   <header>
-    <h1>Training Timer <span class="app-ver">v1.5</span></h1>
+    <h1>Training Timer <span class="app-ver">v1.5.1</span></h1>
     <nav>
       <button data-view="schedule" class="active">Schedule</button>
       <button data-view="trainings">Trainings</button>
@@ -47,20 +47,6 @@
       <div id="training-list" class="card-list"></div>
     </section>
 
-   </div>
-
-    <!-- TRAINING EDITOR -->
-    <section id="view-editor" class="view">
-      <div class="toolbar">
-        <button class="back" data-back="trainings">← Back</button>
-        <input id="editor-name" placeholder="Training name" />
-        <button id="save-training">Save</button>
-        <button id="delete-training" class="danger">Delete</button>
-      </div>
-      <div id="editor-exercises"></div>
-      <button id="add-exercise" class="wide">+ Add exercise</button>
-    </section>
-
     <!-- HISTORY VIEW -->
     <section id="view-history" class="view swipe-view">
       <div class="toolbar"><h2>Your progress</h2></div>
@@ -76,6 +62,20 @@
         <input type="file" id="import-file" accept="application/json,.json" hidden />
       </div>
       <p class="hint">Back up or migrate your trainings, schedule, and history.</p>
+    </section>
+
+   </div>
+
+    <!-- TRAINING EDITOR -->
+    <section id="view-editor" class="view">
+      <div class="toolbar">
+        <button class="back" data-back="trainings">← Back</button>
+        <input id="editor-name" placeholder="Training name" />
+        <button id="save-training">Save</button>
+        <button id="delete-training" class="danger">Delete</button>
+      </div>
+      <div id="editor-exercises"></div>
+      <button id="add-exercise" class="wide">+ Add exercise</button>
     </section>
 
     <!-- RUN VIEW -->
@@ -99,7 +99,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
