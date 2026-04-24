@@ -135,10 +135,15 @@ function beep(freq = 660, duration = 200) {
 }
 
 // ====== Rendering: views ======
-const SWIPEABLE = ['schedule', 'trainings', 'history'];
+function activeSwipeable() {
+  const list = ['schedule', 'trainings', 'history'];
+  if (state.run) list.push('run');
+  return list;
+}
 
 function switchView(name, opts = {}) {
   const swiper = document.getElementById('swiper');
+  const SWIPEABLE = activeSwipeable();
   const isSwipe = SWIPEABLE.includes(name);
 
   document.querySelectorAll('.view:not(.swipe-view)').forEach((el) => el.classList.remove('active'));
@@ -170,6 +175,7 @@ function updateRunNav() {
   const runBtn = document.querySelector('nav button[data-view="run"]');
   runBtn.hidden = !state.run;
   runBtn.classList.toggle('running', !!state.run);
+  document.getElementById('view-run').classList.toggle('swipe-hidden', !state.run);
 }
 
 function setActiveNav(name) {
@@ -192,7 +198,7 @@ document.querySelectorAll('nav button').forEach((b) => {
       raf = null;
       if (!swiper.clientWidth) return;
       const idx = Math.round(swiper.scrollLeft / swiper.clientWidth);
-      const name = SWIPEABLE[idx];
+      const name = activeSwipeable()[idx];
       if (name) setActiveNav(name);
     });
   }, { passive: true });
@@ -264,9 +270,137 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-document.getElementById('add-training').addEventListener('click', () => {
-  openEditor({ id: uid(), name: '', exercises: [], _new: true });
-});
+// ====== Training templates ======
+const TRAINING_TEMPLATES = [
+  {
+    name: 'Blank',
+    desc: 'Start from scratch',
+    exercises: [],
+  },
+  {
+    name: 'Ankle stretch',
+    desc: '3 sets of L/R/rest, 1 min each',
+    exercises: [{
+      name: 'Stretch',
+      repeat: 3,
+      steps: [
+        { type: 'timed', label: 'Right leg', duration: 60 },
+        { type: 'timed', label: 'Left leg',  duration: 60 },
+        { type: 'rest',  label: 'Rest',      duration: 60 },
+      ],
+    }],
+  },
+  {
+    name: 'Bicep curls',
+    desc: '3 sets · 10 reps per arm · 3 min rest · weighted',
+    exercises: [{
+      name: 'Curls',
+      repeat: 3,
+      steps: [
+        { type: 'reps', label: 'Right arm', reps: 10, weighted: true, plannedWeight: 10 },
+        { type: 'reps', label: 'Left arm',  reps: 10, weighted: true, plannedWeight: 10 },
+        { type: 'rest', label: 'Rest',      duration: 180 },
+      ],
+    }],
+  },
+  {
+    name: 'Push/Pull/Legs (PPL) day',
+    desc: 'Bench, row, squat — 4 sets, weighted',
+    exercises: [
+      { name: 'Bench press', repeat: 4, steps: [
+        { type: 'reps', label: 'Bench',  reps: 8, weighted: true, plannedWeight: 60 },
+        { type: 'rest', label: 'Rest',   duration: 120 },
+      ]},
+      { name: 'Barbell row', repeat: 4, steps: [
+        { type: 'reps', label: 'Row',    reps: 8, weighted: true, plannedWeight: 50 },
+        { type: 'rest', label: 'Rest',   duration: 120 },
+      ]},
+      { name: 'Squat', repeat: 4, steps: [
+        { type: 'reps', label: 'Squat',  reps: 8, weighted: true, plannedWeight: 80 },
+        { type: 'rest', label: 'Rest',   duration: 150 },
+      ]},
+    ],
+  },
+  {
+    name: 'Plank circuit',
+    desc: '3 sets · 60s plank · 30s rest',
+    exercises: [{
+      name: 'Plank',
+      repeat: 3,
+      steps: [
+        { type: 'timed', label: 'Plank', duration: 60 },
+        { type: 'rest',  label: 'Rest',  duration: 30 },
+      ],
+    }],
+  },
+  {
+    name: 'Tabata',
+    desc: '8 rounds · 20s work · 10s rest',
+    exercises: [{
+      name: 'HIIT',
+      repeat: 8,
+      steps: [
+        { type: 'timed', label: 'Work', duration: 20 },
+        { type: 'rest',  label: 'Rest', duration: 10 },
+      ],
+    }],
+  },
+  {
+    name: 'Push-ups',
+    desc: '4 sets · 15 reps · 1 min rest · bodyweight',
+    exercises: [{
+      name: 'Push-ups',
+      repeat: 4,
+      steps: [
+        { type: 'reps', label: 'Push-ups', reps: 15 },
+        { type: 'rest', label: 'Rest',     duration: 60 },
+      ],
+    }],
+  },
+];
+
+function showTemplatePicker() {
+  const overlay = document.createElement('div');
+  overlay.className = 'session-detail-overlay';
+  overlay.innerHTML = `
+    <div class="session-detail-card">
+      <h3>New training</h3>
+      <div class="summary">Pick a template — you can edit anything afterward.</div>
+      <div class="template-list">
+        ${TRAINING_TEMPLATES.map((t, i) => `
+          <button class="template-item" data-idx="${i}">
+            <strong>${escapeHtml(t.name)}</strong>
+            <span>${escapeHtml(t.desc)}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="row" style="justify-content: flex-end; margin-top: 1rem;">
+        <button data-act="close">Cancel</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.dataset.act === 'close') {
+      overlay.remove();
+      return;
+    }
+    const item = e.target.closest('.template-item');
+    if (!item) return;
+    const tmpl = TRAINING_TEMPLATES[parseInt(item.dataset.idx)];
+    const cloned = JSON.parse(JSON.stringify(tmpl.exercises));
+    cloned.forEach((ex) => { ex.id = uid(); });
+    overlay.remove();
+    openEditor({
+      id: uid(),
+      name: tmpl.name === 'Blank' ? '' : tmpl.name,
+      exercises: cloned,
+      _new: true,
+    });
+  });
+  document.body.appendChild(overlay);
+}
+
+document.getElementById('add-training').addEventListener('click', showTemplatePicker);
 
 // ====== Editor ======
 function openEditor(training) {
@@ -330,7 +464,7 @@ function renderStepEditor(ex, st, idx) {
   el.className = 'step';
   const pillClass = st.type;
   const placeholder = st.type === 'rest' ? 'Rest' : (st.type === 'reps' ? 'e.g. 10 curls per arm' : 'e.g. Right leg stretch');
-  el.innerHTML = `
+  let html = `
     <span class="pill ${pillClass}">${st.type}</span>
     <input type="text" placeholder="${placeholder}" value="${escapeHtml(st.label || '')}" data-k="label" />
     ${st.type === 'reps'
@@ -339,12 +473,44 @@ function renderStepEditor(ex, st, idx) {
     }
     <button class="danger" data-k="del">✕</button>
   `;
+  if (st.type === 'reps') {
+    html += `
+      <div class="step-extra">
+        <label class="row" style="gap: 0.3rem; align-items: center;">
+          <input type="checkbox" data-k="weighted" ${st.weighted ? 'checked' : ''} />
+          <span>Weighted</span>
+        </label>
+        <input type="number" min="0" step="0.5" placeholder="kg" data-k="weight"
+          value="${st.plannedWeight ?? ''}" ${st.weighted ? '' : 'hidden'} />
+        <span class="hint" data-k="weight-unit" ${st.weighted ? '' : 'hidden'}>kg</span>
+      </div>
+    `;
+  }
+  el.innerHTML = html;
   el.querySelector('[data-k="label"]').addEventListener('input', (e) => { st.label = e.target.value; });
   const numInput = el.querySelector('[data-k="reps"], [data-k="duration"]');
   if (numInput) {
     numInput.addEventListener('input', (e) => {
       const v = Math.max(1, parseInt(e.target.value) || 1);
       if (st.type === 'reps') st.reps = v; else st.duration = v;
+    });
+  }
+  if (st.type === 'reps') {
+    const wCheck = el.querySelector('[data-k="weighted"]');
+    const wInput = el.querySelector('[data-k="weight"]');
+    const wUnit = el.querySelector('[data-k="weight-unit"]');
+    wCheck.addEventListener('change', (e) => {
+      st.weighted = e.target.checked;
+      wInput.hidden = !st.weighted;
+      wUnit.hidden = !st.weighted;
+      if (st.weighted && (st.plannedWeight == null || st.plannedWeight === '')) {
+        st.plannedWeight = 10;
+        wInput.value = 10;
+      }
+    });
+    wInput.addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value);
+      st.plannedWeight = Number.isFinite(v) && v >= 0 ? v : null;
     });
   }
   el.querySelector('[data-k="del"]').addEventListener('click', () => {
@@ -550,6 +716,8 @@ function expandSteps(training) {
           label: st.label || (st.type === 'rest' ? 'Rest' : ''),
           duration: st.duration,
           reps: st.reps,
+          weighted: !!st.weighted,
+          plannedWeight: st.plannedWeight,
         });
       }
     }
@@ -638,12 +806,18 @@ function enterStep(i) {
     // reps: wait for confirm; allow user to enter actual reps done
     run.remaining = null;
     const timerEl = document.getElementById('run-timer');
-    timerEl.innerHTML = `
+    let html = `
       <input type="number" class="reps-input" id="reps-actual" min="0" value="${st.reps}" />
       <div class="reps-label">reps (planned: ${st.reps})</div>
     `;
+    if (st.weighted) {
+      html += `
+        <input type="number" class="reps-input weight-input" id="weight-actual" min="0" step="0.5" value="${st.plannedWeight ?? 0}" />
+        <div class="reps-label">kg (planned: ${st.plannedWeight ?? 0})</div>
+      `;
+    }
+    timerEl.innerHTML = html;
     nextBtn.textContent = 'Done ✓';
-    // Auto-select the input value so the user can quickly type a different number
     const input = document.getElementById('reps-actual');
     input?.focus();
     input?.select();
@@ -671,6 +845,13 @@ function recordStepResult() {
     const v = input ? parseInt(input.value) : NaN;
     entry.plannedReps = cur.reps;
     entry.actualReps = Number.isFinite(v) && v >= 0 ? v : cur.reps;
+    if (cur.weighted) {
+      entry.weighted = true;
+      entry.plannedWeight = cur.plannedWeight ?? 0;
+      const wInput = document.getElementById('weight-actual');
+      const w = wInput ? parseFloat(wInput.value) : NaN;
+      entry.actualWeight = Number.isFinite(w) && w >= 0 ? w : (cur.plannedWeight ?? 0);
+    }
   } else {
     const elapsed = (cur.duration ?? 0) - (run.remaining ?? 0);
     entry.plannedSec = cur.duration;
@@ -710,7 +891,8 @@ document.getElementById('stop-run').addEventListener('click', async () => {
   await releaseWakeLock();
   state.run = null;
   updateRunNav();
-  switchView('trainings');
+  renderHistory();
+  switchView('history');
 });
 
 async function finishRun() {
@@ -753,6 +935,8 @@ async function finishRun() {
     renderHistory();
     switchView('history');
   };
+
+  renderHistory();
 
   if (state.stats.level > before.level) {
     showLevelUp(state.stats.level);
@@ -980,25 +1164,34 @@ function showSessionDetail(h) {
   const log = h.log || [];
   const items = log.length ? log.map((s) => {
     const isReps = s.type === 'reps';
-    const planned = isReps ? s.plannedReps : (s.plannedSec || 0);
-    const actual = isReps ? s.actualReps : (s.actualSec || 0);
-    const success = actual >= planned;
-    const partial = !success;
 
-    let main;
-    if (success) {
-      main = isReps ? `${actual} reps` : formatSec(actual);
+    let main, success;
+    if (isReps) {
+      const repsOk = s.actualReps >= s.plannedReps;
+      const weightOk = !s.weighted || (s.actualWeight ?? 0) >= (s.plannedWeight ?? 0);
+      success = repsOk && weightOk;
+      const repsPart = s.actualReps === s.plannedReps
+        ? `${s.actualReps} reps`
+        : `${s.actualReps}/${s.plannedReps} reps`;
+      let weightPart = '';
+      if (s.weighted) {
+        weightPart = s.actualWeight === s.plannedWeight
+          ? ` × ${formatWeight(s.actualWeight)}`
+          : ` × ${formatWeight(s.actualWeight)}/${formatWeight(s.plannedWeight)}`;
+      }
+      main = repsPart + weightPart;
     } else {
-      main = isReps
-        ? `${actual}/${planned} reps`
-        : `${formatSec(actual)}/${formatSec(planned)}`;
+      const planned = s.plannedSec || 0;
+      const actual = s.actualSec || 0;
+      success = actual >= planned;
+      main = success ? formatSec(actual) : `${formatSec(actual)}/${formatSec(planned)}`;
     }
-    // For reps, also show how long it took to complete
+
     const repsTime = isReps && s.elapsedSec ? ` <span class="planned">in ${formatSec(s.elapsedSec)}</span>` : '';
     const icon = success ? '<span class="step-icon ok">✓</span>' : '<span class="step-icon partial">⚠</span>';
     const setLabel = s.setTotal > 1 ? ` <span class="hint">(set ${s.setIndex}/${s.setTotal})</span>` : '';
     return `
-      <li class="${partial ? 'partial' : ''}">
+      <li class="${success ? '' : 'partial'}">
         <span class="pill ${s.type}">${s.type}</span>
         <span>${escapeHtml(s.label)}${setLabel}</span>
         <span class="actual">${main}${repsTime} ${icon}</span>
@@ -1040,6 +1233,11 @@ function formatSec(sec) {
   if (m === 0) return `${s}s`;
   if (s === 0) return `${m}m`;
   return `${m}m ${s}s`;
+}
+
+function formatWeight(kg) {
+  if (kg == null) return '0kg';
+  return Number.isInteger(kg) ? `${kg}kg` : `${kg.toFixed(1)}kg`;
 }
 
 function renderScheduleStats() {
