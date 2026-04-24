@@ -35,6 +35,13 @@ header h1 {
   margin: 0 0 0.5rem;
 }
 
+.app-ver {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 0.3rem;
+}
+
 nav {
   display: flex;
   gap: 0.5rem;
