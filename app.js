@@ -706,8 +706,8 @@ async function scheduleReminders() {
     const when = atDate - Date.now();
     if (when <= 0) continue;
 
-    // Preferred: schedule via Notification Triggers — fires even when the app is closed.
-    // (Chrome-only, requires "Experimental web platform features" on some builds.)
+    // Best-effort: TimestampTrigger may fire when the app is closed (Chrome experimental,
+    // often shipped-but-non-functional in modern builds). We attempt it but DON'T rely on it.
     if (supportsTrigger) {
       try {
         await reg.showNotification('Training time!', {
@@ -717,13 +717,14 @@ async function scheduleReminders() {
           data: { trainingId: t.id, when: atDate.getTime() },
           requireInteraction: false,
         });
-        continue;
       } catch (e) {
-        console.warn('TimestampTrigger failed; falling back to setTimeout', e);
+        console.warn('TimestampTrigger scheduling failed', e);
       }
     }
 
-    // Fallback: only fires while the app is open in a tab
+    // Always also schedule via setTimeout so that, while the app is open, the notification
+    // reliably fires even if TimestampTrigger is exposed-but-broken. The matching `tag`
+    // means both firings collapse into a single visible notification.
     if (when < 2 ** 31) {
       const timer = setTimeout(async () => {
         try {
