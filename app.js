@@ -511,6 +511,7 @@ function startRun(training) {
     paused: false,
     startedAt: Date.now(),
     stepsDone: 0,
+    log: [],
   };
   document.getElementById('run-title').textContent = training.name;
   switchView('run');
@@ -569,15 +570,51 @@ function enterStep(i) {
       else if (run.remaining === 1) beep(500, 100);
       if (run.remaining <= 0) {
         beep(900, 300);
+        run.remaining = 0;
+        recordStepResult();
         enterStep(i + 1);
       }
     }, 1000);
   } else {
-    // reps: wait for confirm
+    // reps: wait for confirm; allow user to enter actual reps done
     run.remaining = null;
-    document.getElementById('run-timer').textContent = `${st.reps} reps`;
+    const timerEl = document.getElementById('run-timer');
+    timerEl.innerHTML = `
+      <input type="number" class="reps-input" id="reps-actual" min="0" value="${st.reps}" />
+      <div class="reps-label">reps (planned: ${st.reps})</div>
+    `;
     nextBtn.textContent = 'Done ✓';
+    // Auto-select the input value so the user can quickly type a different number
+    const input = document.getElementById('reps-actual');
+    input?.focus();
+    input?.select();
   }
+}
+
+function recordStepResult() {
+  const run = state.run;
+  if (!run) return;
+  const i = run.index;
+  const cur = run.steps[i];
+  if (!cur) return;
+  const entry = {
+    exerciseName: cur.exerciseName,
+    setIndex: cur.setIndex,
+    setTotal: cur.setTotal,
+    label: cur.label || (cur.type === 'rest' ? 'Rest' : cur.exerciseName),
+    type: cur.type,
+  };
+  if (cur.type === 'reps') {
+    const input = document.getElementById('reps-actual');
+    const v = input ? parseInt(input.value) : NaN;
+    entry.plannedReps = cur.reps;
+    entry.actualReps = Number.isFinite(v) && v >= 0 ? v : cur.reps;
+  } else {
+    const elapsed = (cur.duration ?? 0) - (run.remaining ?? 0);
+    entry.plannedSec = cur.duration;
+    entry.actualSec = Math.max(0, elapsed);
+  }
+  run.log[i] = entry;
 }
 
 function updateTimer() {
@@ -593,6 +630,7 @@ function updateTimer() {
 
 document.getElementById('run-next').addEventListener('click', () => {
   if (!state.run) return;
+  recordStepResult();
   enterStep(state.run.index + 1);
 });
 
@@ -627,6 +665,7 @@ async function finishRun() {
     stepsCompleted: run.steps.length,
     stepsTotal: run.steps.length,
     completed: true,
+    log: run.log.filter(Boolean),
   };
   await idbPut('history', entry);
 
@@ -660,7 +699,8 @@ async function finishRun() {
 async function abortRun() {
   const run = state.run;
   if (!run || !run.stepsDone) return;
-  // Save partial session if at least one step done
+  // Capture in-progress step before aborting
+  recordStepResult();
   const endedAt = Date.now();
   await idbPut('history', {
     id: uid(),
@@ -672,6 +712,7 @@ async function abortRun() {
     stepsCompleted: run.stepsDone,
     stepsTotal: run.steps.length,
     completed: false,
+    log: run.log.filter(Boolean),
   });
   state.history = (await idbAll('history')) || [];
   state.stats = computeStats(state.history);
@@ -835,7 +876,7 @@ function renderHistory() {
       const ss = h.durationSec % 60;
       const dur = mm > 0 ? `${mm}m ${ss}s` : `${ss}s`;
       return `
-        <div class="card history-entry">
+        <div class="card history-entry" data-id="${h.id}">
           <div class="card-head">
             <div>
               <strong>${escapeHtml(h.trainingName)}</strong>
@@ -851,7 +892,75 @@ function renderHistory() {
         </div>
       `;
     }).join('');
+    list.querySelectorAll('.history-entry').forEach((el) => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        const session = state.history.find((h) => h.id === id);
+        if (session) showSessionDetail(session);
+      });
+    });
   }
+}
+
+function showSessionDetail(h) {
+  const d = new Date(h.startedAt);
+  const when = d.toLocaleString([], { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const mm = Math.floor(h.durationSec / 60);
+  const ss = h.durationSec % 60;
+  const dur = mm > 0 ? `${mm}m ${ss}s` : `${ss}s`;
+
+  const log = h.log || [];
+  const items = log.length ? log.map((s, idx) => {
+    const isReps = s.type === 'reps';
+    const value = isReps ? `${s.actualReps} reps` : formatSec(s.actualSec || 0);
+    const planned = isReps
+      ? (s.actualReps !== s.plannedReps ? `planned ${s.plannedReps}` : '')
+      : (s.actualSec < (s.plannedSec || 0) ? `planned ${formatSec(s.plannedSec)}` : '');
+    const partial = (isReps && s.actualReps < s.plannedReps) || (!isReps && s.actualSec < (s.plannedSec || 0));
+    const setLabel = s.setTotal > 1 ? ` <span class="hint">(set ${s.setIndex}/${s.setTotal})</span>` : '';
+    return `
+      <li class="${partial ? 'partial' : ''}">
+        <span class="pill ${s.type}">${s.type}</span>
+        <span>${escapeHtml(s.label)}${setLabel}</span>
+        <span class="actual">${value}${planned ? ` <span class="planned">${planned}</span>` : ''}</span>
+      </li>
+    `;
+  }).join('') : '<p class="hint">No step-level data recorded for this session.</p>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'session-detail-overlay';
+  overlay.innerHTML = `
+    <div class="session-detail-card">
+      <h3>${escapeHtml(h.trainingName)}</h3>
+      <div class="summary">
+        ${when} · ${dur} · ${h.stepsCompleted}/${h.stepsTotal} steps · +${Math.round(h.durationSec * XP_PER_SEC)} XP
+        ${h.completed ? '' : ' · <em>partial</em>'}
+      </div>
+      <ul class="step-log">${items}</ul>
+      <div class="row" style="margin-top: 1rem; justify-content: flex-end;">
+        <button class="danger" data-act="delete">Delete</button>
+        <button data-act="close">Close</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.dataset.act === 'close') overlay.remove();
+  });
+  overlay.querySelector('[data-act="delete"]').addEventListener('click', async () => {
+    if (!confirm('Delete this session from history?')) return;
+    await idbDelete('history', h.id);
+    overlay.remove();
+    await loadHistory();
+  });
+  document.body.appendChild(overlay);
+}
+
+function formatSec(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  if (m === 0) return `${s}s`;
+  if (s === 0) return `${m}m`;
+  return `${m}m ${s}s`;
 }
 
 function renderScheduleStats() {
