@@ -1,5 +1,5 @@
 // Bump this version string to force clients to re-cache after you update files.
-const CACHE = 'training-timer-v25';
+const CACHE = 'training-timer-v26';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +23,17 @@ self.addEventListener('activate', (event) => {
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if ('focus' in c) return c.focus();
+    }
+    if (clients.openWindow) return clients.openWindow('./');
+  })());
 });
 
 // Network-first for same-origin GET requests. Cache is offline fallback only.

@@ -682,19 +682,53 @@ document.getElementById('enable-notif').addEventListener('click', async () => {
 });
 
 let reminderTimers = [];
-function scheduleReminders() {
+async function scheduleReminders() {
   reminderTimers.forEach((t) => clearTimeout(t));
   reminderTimers = [];
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const reg = await navigator.serviceWorker?.ready.catch(() => null);
+  if (!reg) return;
+
+  // Clear previously-scheduled notifications (including ones scheduled via TimestampTrigger)
+  try {
+    const opts = 'getNotifications' in reg ? { includeTriggered: true } : undefined;
+    const existing = await reg.getNotifications(opts);
+    for (const n of existing) if (n.tag?.startsWith('training-')) n.close();
+  } catch {}
+
+  const supportsTrigger = 'TimestampTrigger' in window;
+
   for (const s of state.schedule) {
     const t = state.trainings.find((x) => x.id === s.trainingId);
     if (!t) continue;
-    const when = nextOccurrence(s) - new Date();
-    if (when > 0 && when < 2 ** 31) {
-      const timer = setTimeout(() => {
+    const atDate = nextOccurrence(s);
+    const when = atDate - Date.now();
+    if (when <= 0) continue;
+
+    // Preferred: schedule via Notification Triggers — fires even when the app is closed.
+    // (Chrome-only, requires "Experimental web platform features" on some builds.)
+    if (supportsTrigger) {
+      try {
+        await reg.showNotification('Training time!', {
+          body: t.name,
+          tag: 'training-' + s.id,
+          showTrigger: new TimestampTrigger(atDate.getTime()),
+          data: { trainingId: t.id, when: atDate.getTime() },
+          requireInteraction: false,
+        });
+        continue;
+      } catch (e) {
+        console.warn('TimestampTrigger failed; falling back to setTimeout', e);
+      }
+    }
+
+    // Fallback: only fires while the app is open in a tab
+    if (when < 2 ** 31) {
+      const timer = setTimeout(async () => {
         try {
-          new Notification('Training time!', { body: t.name, tag: 'training-' + s.id });
-        } catch {}
+          await reg.showNotification('Training time!', { body: t.name, tag: 'training-' + s.id });
+        } catch (e) { console.warn('Notification failed', e); }
         scheduleReminders();
       }, when);
       reminderTimers.push(timer);
