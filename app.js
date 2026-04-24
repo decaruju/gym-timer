@@ -690,14 +690,19 @@ async function scheduleReminders() {
   const reg = await navigator.serviceWorker?.ready.catch(() => null);
   if (!reg) return;
 
-  // Clear previously-scheduled notifications (including ones scheduled via TimestampTrigger)
+  // Clear previously-scheduled (triggered, not yet shown) notifications only.
+  // Skip ones already displayed — we don't want to dismiss a notification the user
+  // just received from a timer that just fired (the recursive call after firing).
   try {
-    const opts = 'getNotifications' in reg ? { includeTriggered: true } : undefined;
-    const existing = await reg.getNotifications(opts);
-    for (const n of existing) if (n.tag?.startsWith('training-')) n.close();
+    const existing = await reg.getNotifications({ includeTriggered: true });
+    const now = Date.now();
+    for (const n of existing) {
+      if (!n.tag?.startsWith('training-')) continue;
+      const scheduled = n.data?.when;
+      // Only close if it's a future scheduled trigger; leave currently-shown alerts alone.
+      if (typeof scheduled === 'number' && scheduled > now + 1000) n.close();
+    }
   } catch {}
-
-  const supportsTrigger = 'TimestampTrigger' in window;
 
   for (const s of state.schedule) {
     const t = state.trainings.find((x) => x.id === s.trainingId);
@@ -706,29 +711,17 @@ async function scheduleReminders() {
     const when = atDate - Date.now();
     if (when <= 0) continue;
 
-    // Best-effort: TimestampTrigger may fire when the app is closed (Chrome experimental,
-    // often shipped-but-non-functional in modern builds). We attempt it but DON'T rely on it.
-    if (supportsTrigger) {
-      try {
-        await reg.showNotification('Training time!', {
-          body: t.name,
-          tag: 'training-' + s.id,
-          showTrigger: new TimestampTrigger(atDate.getTime()),
-          data: { trainingId: t.id, when: atDate.getTime() },
-          requireInteraction: false,
-        });
-      } catch (e) {
-        console.warn('TimestampTrigger scheduling failed', e);
-      }
-    }
-
-    // Always also schedule via setTimeout so that, while the app is open, the notification
-    // reliably fires even if TimestampTrigger is exposed-but-broken. The matching `tag`
-    // means both firings collapse into a single visible notification.
+    // setTimeout-only scheduling. Fires while the app is open (foreground or recently
+    // backgrounded). TimestampTrigger is deprecated/broken in current Chrome.
     if (when < 2 ** 31) {
       const timer = setTimeout(async () => {
         try {
-          await reg.showNotification('Training time!', { body: t.name, tag: 'training-' + s.id });
+          await reg.showNotification('Training time!', {
+            body: t.name,
+            tag: 'training-' + s.id,
+            requireInteraction: true,
+            renotify: true,
+          });
         } catch (e) { console.warn('Notification failed', e); }
         scheduleReminders();
       }, when);
