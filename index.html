@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Training Timer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" crossorigin="use-credentials" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="theme-color" content="#0f1115" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Trainer" />
+</head>
+<body>
+  <header>
+    <h1>Training Timer</h1>
+    <nav>
+      <button data-view="schedule" class="active">Schedule</button>
+      <button data-view="trainings">Trainings</button>
+      <button data-view="history">History</button>
+      <button data-view="run" hidden>Run</button>
+      <button id="install-btn" hidden>Install</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SCHEDULE VIEW -->
+    <section id="view-schedule" class="view active">
+      <div class="toolbar">
+        <h2>Weekly Schedule</h2>
+        <button id="add-slot">+ Add slot</button>
+      </div>
+      <div id="next-up" class="next-up"></div>
+      <div id="schedule-list" class="card-list"></div>
+      <p class="hint">Reminders use browser notifications. <button id="enable-notif">Enable notifications</button></p>
+    </section>
+
+    <!-- TRAININGS VIEW -->
+    <section id="view-trainings" class="view">
+      <div class="toolbar">
+        <h2>Trainings</h2>
+        <button id="add-training">+ New training</button>
+      </div>
+      <div id="training-list" class="card-list"></div>
+    </section>
+
+    <!-- TRAINING EDITOR -->
+    <section id="view-editor" class="view">
+      <div class="toolbar">
+        <button class="back" data-back="trainings">← Back</button>
+        <input id="editor-name" placeholder="Training name" />
+        <button id="save-training">Save</button>
+        <button id="delete-training" class="danger">Delete</button>
+      </div>
+      <div id="editor-exercises"></div>
+      <button id="add-exercise" class="wide">+ Add exercise</button>
+    </section>
+
+    <!-- HISTORY VIEW -->
+    <section id="view-history" class="view">
+      <div class="toolbar"><h2>Your progress</h2></div>
+      <div id="stats-cards" class="stats-cards"></div>
+      <h3 class="section-h">Achievements</h3>
+      <div id="achievements" class="achievements"></div>
+      <h3 class="section-h">Recent sessions</h3>
+      <div id="history-list" class="card-list"></div>
+      <h3 class="section-h">Data</h3>
+      <div class="row">
+        <button id="export-data">Export JSON</button>
+        <button id="import-data">Import JSON</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden />
+      </div>
+      <p class="hint">Back up or migrate your trainings, schedule, and history.</p>
+    </section>
+
+    <!-- RUN VIEW -->
+    <section id="view-run" class="view run-view">
+      <div class="run-header">
+        <button class="back" id="stop-run">✕ Stop</button>
+        <div id="run-title"></div>
+      </div>
+      <div id="run-step" class="run-step">
+        <div id="run-label" class="run-label"></div>
+        <div id="run-sub" class="run-sub"></div>
+        <div id="run-timer" class="run-timer">—</div>
+        <div class="run-actions">
+          <button id="run-pause">Pause</button>
+          <button id="run-next">Next / Done</button>
+        </div>
+        <div id="run-upcoming" class="run-upcoming"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch((e) => console.warn('SW registration failed', e));
+      });
+    }
+  </script>
+</body>
+</html>
