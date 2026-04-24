@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Training Timer</title>
-  <link rel="stylesheet" href="styles.css?v=17" />
-  <link rel="manifest" href="manifest.json?v=17" crossorigin="use-credentials" />
+  <link rel="stylesheet" href="styles.css?v=18" />
+  <link rel="manifest" href="manifest.json?v=18" crossorigin="use-credentials" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="theme-color" content="#0f1115" />
@@ -15,7 +15,7 @@
 </head>
 <body>
   <header>
-    <h1>Training Timer <span class="app-ver">v1.4</span></h1>
+    <h1>Training Timer <span class="app-ver">v1.5</span></h1>
     <nav>
       <button data-view="schedule" class="active">Schedule</button>
       <button data-view="trainings">Trainings</button>
@@ -26,8 +26,9 @@
   </header>
 
   <main>
+   <div id="swiper" class="swiper active">
     <!-- SCHEDULE VIEW -->
-    <section id="view-schedule" class="view active">
+    <section id="view-schedule" class="view swipe-view">
       <div class="toolbar">
         <h2>Weekly Schedule</h2>
         <button id="add-slot">+ Add slot</button>
@@ -38,13 +39,15 @@
     </section>
 
     <!-- TRAININGS VIEW -->
-    <section id="view-trainings" class="view">
+    <section id="view-trainings" class="view swipe-view">
       <div class="toolbar">
         <h2>Trainings</h2>
         <button id="add-training">+ New training</button>
       </div>
       <div id="training-list" class="card-list"></div>
     </section>
+
+   </div>
 
     <!-- TRAINING EDITOR -->
     <section id="view-editor" class="view">
@@ -59,7 +62,7 @@
     </section>
 
     <!-- HISTORY VIEW -->
-    <section id="view-history" class="view">
+    <section id="view-history" class="view swipe-view">
       <div class="toolbar"><h2>Your progress</h2></div>
       <div id="stats-cards" class="stats-cards"></div>
       <h3 class="section-h">Achievements</h3>
@@ -96,7 +99,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {

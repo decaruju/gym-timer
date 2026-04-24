@@ -135,49 +135,63 @@ function beep(freq = 660, duration = 200) {
 }
 
 // ====== Rendering: views ======
-function switchView(name) {
-  document.querySelectorAll('.view').forEach((el) => el.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
+const SWIPEABLE = ['schedule', 'trainings', 'history'];
+
+function switchView(name, opts = {}) {
+  const swiper = document.getElementById('swiper');
+  const isSwipe = SWIPEABLE.includes(name);
+
+  document.querySelectorAll('.view:not(.swipe-view)').forEach((el) => el.classList.remove('active'));
+
+  if (isSwipe) {
+    swiper.classList.add('active');
+    const idx = SWIPEABLE.indexOf(name);
+    // Use auto behavior on initial load; smooth otherwise (handled by CSS scroll-behavior)
+    const left = idx * swiper.clientWidth;
+    if (opts.instant) {
+      const prev = swiper.style.scrollBehavior;
+      swiper.style.scrollBehavior = 'auto';
+      swiper.scrollLeft = left;
+      // restore on next frame
+      requestAnimationFrame(() => { swiper.style.scrollBehavior = prev || ''; });
+    } else {
+      swiper.scrollTo({ left, behavior: 'smooth' });
+    }
+  } else {
+    swiper.classList.remove('active');
+    document.getElementById('view-' + name).classList.add('active');
+  }
+
+  setActiveNav(name);
+  const runBtn = document.querySelector('nav button[data-view="run"]');
+  runBtn.hidden = name !== 'run';
+}
+
+function setActiveNav(name) {
   document.querySelectorAll('nav button').forEach((b) => {
     b.classList.toggle('active', b.dataset.view === name);
   });
-  const runBtn = document.querySelector('nav button[data-view="run"]');
-  runBtn.hidden = name !== 'run';
 }
 
 document.querySelectorAll('nav button').forEach((b) => {
   b.addEventListener('click', () => switchView(b.dataset.view));
 });
 
-// Swipe between main tabs
-const SWIPEABLE = ['schedule', 'trainings', 'history'];
-function currentSwipeIndex() {
-  const active = document.querySelector('.view.active');
-  return SWIPEABLE.indexOf(active?.id?.replace('view-', ''));
-}
-let touchStartX = null, touchStartY = null, touchStartT = 0;
-document.querySelector('main').addEventListener('touchstart', (e) => {
-  if (e.touches.length !== 1) return;
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  touchStartT = Date.now();
-}, { passive: true });
-document.querySelector('main').addEventListener('touchend', (e) => {
-  if (touchStartX == null) return;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  const dt = Date.now() - touchStartT;
-  touchStartX = touchStartY = null;
-  if (Math.abs(dx) < 60 || Math.abs(dy) > 50 || dt > 600) return;
-  // Don't intercept swipes that started on form controls
-  if (e.target.closest('input, select, textarea, button')) return;
-  const idx = currentSwipeIndex();
-  if (idx < 0) return;
-  const next = dx < 0 ? idx + 1 : idx - 1;
-  if (next < 0 || next >= SWIPEABLE.length) return;
-  switchView(SWIPEABLE[next]);
-}, { passive: true });
+// Update nav highlight as the user swipes the carousel
+(() => {
+  const swiper = document.getElementById('swiper');
+  let raf = null;
+  swiper.addEventListener('scroll', () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = null;
+      if (!swiper.clientWidth) return;
+      const idx = Math.round(swiper.scrollLeft / swiper.clientWidth);
+      const name = SWIPEABLE[idx];
+      if (name) setActiveNav(name);
+    });
+  }, { passive: true });
+})();
 
 document.querySelectorAll('[data-back]').forEach((b) => {
   b.addEventListener('click', () => switchView(b.dataset.back));
