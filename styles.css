@@ -66,6 +66,17 @@ nav button.active {
   font-weight: 600;
 }
 
+nav button.running {
+  border-color: var(--accent);
+  color: var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+}
+
 main {
   flex: 1;
   overflow: hidden;

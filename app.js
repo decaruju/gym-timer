@@ -163,8 +163,13 @@ function switchView(name, opts = {}) {
   }
 
   setActiveNav(name);
+  updateRunNav();
+}
+
+function updateRunNav() {
   const runBtn = document.querySelector('nav button[data-view="run"]');
-  runBtn.hidden = name !== 'run';
+  runBtn.hidden = !state.run;
+  runBtn.classList.toggle('running', !!state.run);
 }
 
 function setActiveNav(name) {
@@ -567,6 +572,7 @@ function startRun(training) {
     log: [],
   };
   document.getElementById('run-title').textContent = training.name;
+  updateRunNav();
   switchView('run');
   acquireWakeLock();
   enterStep(0);
@@ -703,6 +709,7 @@ document.getElementById('stop-run').addEventListener('click', async () => {
   await abortRun();
   await releaseWakeLock();
   state.run = null;
+  updateRunNav();
   switchView('trainings');
 });
 
@@ -742,6 +749,7 @@ async function finishRun() {
     document.getElementById('run-next').onclick = null;
     await releaseWakeLock();
     state.run = null;
+    updateRunNav();
     renderHistory();
     switchView('history');
   };
