@@ -75,7 +75,16 @@ const state = {
   schedule: [],
   editingTraining: null,
   run: null,
+  settings: { prepDelay: 5 },
 };
+
+async function loadSettings() {
+  const m = await idbGet('meta', 'settings');
+  if (m && typeof m.prepDelay === 'number') state.settings.prepDelay = m.prepDelay;
+}
+async function saveSettings() {
+  await idbPut('meta', { key: 'settings', prepDelay: state.settings.prepDelay });
+}
 
 // ====== Wake lock (keep screen on) ======
 let wakeLock = null;
@@ -1143,7 +1152,7 @@ function startRun(training) {
   updateRunNav();
   switchView('run');
   acquireWakeLock();
-  enterStep(0);
+  prepThenEnter(0);
 }
 
 function clearRunTimer() {
@@ -1153,10 +1162,54 @@ function clearRunTimer() {
   }
 }
 
-function enterStep(i) {
+function prepThenEnter(i) {
   const run = state.run;
   if (!run) return;
   clearRunTimer();
+  if (i >= run.steps.length) return finishRun();
+  run.index = i;
+  const next = run.steps[i];
+  const delay = state.settings.prepDelay | 0;
+  // Skip prep for rest steps and when delay is disabled
+  if (delay <= 0 || next.type === 'rest') {
+    run.prepping = false;
+    return enterStep(i);
+  }
+  run.prepping = true;
+  // Show prep UI
+  const setInfo = next.setTotal > 1 ? `${next.exerciseName} · set ${next.setIndex}/${next.setTotal}` : (next.exerciseName || '');
+  document.getElementById('run-label').textContent = 'Get ready';
+  document.getElementById('run-sub').textContent = next.label || setInfo || '';
+  document.getElementById('run-timer').textContent = String(delay);
+  document.getElementById('run-upcoming').innerHTML = '';
+  document.getElementById('run-next').textContent = 'Skip prep →';
+  document.getElementById('run-pause').textContent = 'Pause';
+
+  speak(buildSpokenStep(next));
+  beep(440, 100);
+
+  let remaining = delay;
+  run.timerId = setInterval(() => {
+    if (run.paused) return;
+    remaining -= 1;
+    document.getElementById('run-timer').textContent = String(Math.max(0, remaining));
+    if (remaining <= 0) {
+      clearInterval(run.timerId);
+      run.timerId = null;
+      run.prepping = false;
+      speak('Go');
+      beep(900, 200);
+      enterStep(i, true);
+    }
+  }, 1000);
+}
+
+function enterStep(i, fromPrep = false) {
+  const run = state.run;
+  if (!run) return;
+  clearRunTimer();
+  run.prepping = false;
+  run._fromPrep = fromPrep;
   if (i > 0) run.stepsDone = Math.max(run.stepsDone, i);
   if (i >= run.steps.length) return finishRun();
   run.index = i;
@@ -1176,7 +1229,7 @@ function enterStep(i) {
 
   const nextBtn = document.getElementById('run-next');
 
-  speak(buildSpokenStep(st));
+  if (!fromPrep) speak(buildSpokenStep(st));
   beep(700, 150);
 
   if (st.type === 'timed' || st.type === 'rest') {
@@ -1195,7 +1248,7 @@ function enterStep(i) {
         beep(900, 300);
         run.remaining = 0;
         recordStepResult();
-        enterStep(i + 1);
+        prepThenEnter(i + 1);
       }
     }, 1000);
   } else {
@@ -1269,8 +1322,15 @@ function updateTimer() {
 
 document.getElementById('run-next').addEventListener('click', () => {
   if (!state.run || state.run.finished) return;
+  // If we're in the prep phase, skip prep and go straight to the step
+  if (state.run.prepping) {
+    clearRunTimer();
+    state.run.prepping = false;
+    enterStep(state.run.index);
+    return;
+  }
   recordStepResult();
-  enterStep(state.run.index + 1);
+  prepThenEnter(state.run.index + 1);
 });
 
 document.getElementById('run-pause').addEventListener('click', () => {
@@ -1712,6 +1772,18 @@ async function importData(file) {
   scheduleReminders();
 }
 
+// Settings input
+(() => {
+  const input = document.getElementById('prep-delay');
+  if (!input) return;
+  input.addEventListener('change', async () => {
+    const v = Math.max(0, Math.min(60, parseInt(input.value) || 0));
+    state.settings.prepDelay = v;
+    input.value = v;
+    await saveSettings();
+  });
+})();
+
 document.getElementById('export-data')?.addEventListener('click', exportData);
 document.getElementById('import-data')?.addEventListener('click', () => document.getElementById('import-file')?.click());
 document.getElementById('import-file')?.addEventListener('change', (e) => {
@@ -1744,6 +1816,9 @@ window.addEventListener('appinstalled', () => {
 
 // ====== Init ======
 (async function init() {
+  await loadSettings();
+  const prepInput = document.getElementById('prep-delay');
+  if (prepInput) prepInput.value = state.settings.prepDelay;
   await loadTrainings();
   await loadSchedule();
   await loadHistory();

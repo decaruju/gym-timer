@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Training Timer</title>
-  <link rel="stylesheet" href="styles.css?v=31" />
-  <link rel="manifest" href="manifest.json?v=31" crossorigin="use-credentials" />
+  <link rel="stylesheet" href="styles.css?v=32" />
+  <link rel="manifest" href="manifest.json?v=32" crossorigin="use-credentials" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="theme-color" content="#0f1115" />
@@ -15,7 +15,7 @@
 </head>
 <body>
   <header>
-    <h1>Training Timer <span class="app-ver">v1.15</span></h1>
+    <h1>Training Timer <span class="app-ver">v1.16</span></h1>
     <nav>
       <button data-view="schedule" class="active">Schedule</button>
       <button data-view="trainings">Trainings</button>
@@ -55,6 +55,13 @@
       <div id="achievements" class="achievements"></div>
       <h3 class="section-h">Recent sessions</h3>
       <div id="history-list" class="card-list"></div>
+      <h3 class="section-h">Settings</h3>
+      <label class="row" style="gap: 0.5rem;">
+        <span>Prep countdown</span>
+        <input type="number" id="prep-delay" min="0" max="60" step="1" style="width: 80px;" />
+        <span class="hint">seconds before each exercise</span>
+      </label>
+
       <h3 class="section-h">Data</h3>
       <div class="row">
         <button id="export-data">Export JSON</button>
@@ -98,7 +105,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=31"></script>
+  <script src="app.js?v=32"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
