@@ -119,6 +119,35 @@ function speak(text) {
   window.speechSynthesis.speak(u);
 }
 
+function spokenDuration(sec) {
+  sec = Math.max(0, sec || 0);
+  if (sec >= 60 && sec % 60 === 0) {
+    const m = sec / 60;
+    return `${m} minute${m === 1 ? '' : 's'}`;
+  }
+  return `${sec} second${sec === 1 ? '' : 's'}`;
+}
+
+function buildSpokenStep(st) {
+  const parts = [];
+  if (st.type === 'rest') {
+    parts.push('Rest');
+    parts.push(spokenDuration(st.duration));
+  } else {
+    if (st.exerciseName && st.exerciseName !== st.label) parts.push(st.exerciseName);
+    if (st.label) parts.push(st.label);
+    if (st.type === 'reps') {
+      let q = `${st.reps} rep${st.reps === 1 ? '' : 's'}`;
+      if (st.weighted && st.plannedWeight != null) q += ` with ${st.plannedWeight} kilograms`;
+      parts.push(q);
+    } else {
+      parts.push(spokenDuration(st.duration));
+    }
+  }
+  if (st.setTotal > 1) parts.push(`set ${st.setIndex} of ${st.setTotal}`);
+  return parts.join(', ');
+}
+
 function beep(freq = 660, duration = 200) {
   try {
     const ctx = beep.ctx || (beep.ctx = new (window.AudioContext || window.webkitAudioContext)());
@@ -354,6 +383,332 @@ const TRAINING_TEMPLATES = [
       steps: [
         { type: 'reps', label: 'Push-ups', reps: 15 },
         { type: 'rest', label: 'Rest',     duration: 60 },
+      ],
+    }],
+  },
+  // ----- Calisthenics & mobility programs -----
+  {
+    name: 'Pull-Up Ladder',
+    desc: '5 sets · descending reps 8→4 · 90s rest · bodyweight',
+    exercises: [8, 7, 6, 5, 4].map((reps, i, arr) => ({
+      name: `Set ${i + 1}`,
+      repeat: 1,
+      steps: i === arr.length - 1
+        ? [{ type: 'reps', label: 'Pull-ups', reps }]
+        : [{ type: 'reps', label: 'Pull-ups', reps }, { type: 'rest', label: 'Rest', duration: 90 }],
+    })),
+  },
+  {
+    name: 'Dip Pyramid',
+    desc: '6 sets · 3-5-7-7-5-3 reps · 90s rest',
+    exercises: [3, 5, 7, 7, 5, 3].map((reps, i, arr) => ({
+      name: `Set ${i + 1}`,
+      repeat: 1,
+      steps: i === arr.length - 1
+        ? [{ type: 'reps', label: 'Dips', reps }]
+        : [{ type: 'reps', label: 'Dips', reps }, { type: 'rest', label: 'Rest', duration: 90 }],
+    })),
+  },
+  {
+    name: 'Push / Pull Superset',
+    desc: '4 rounds · push-ups + pull-ups · 60s rest',
+    exercises: [{
+      name: 'Superset',
+      repeat: 4,
+      skipLastRest: true,
+      steps: [
+        { type: 'reps', label: 'Push-ups', reps: 12 },
+        { type: 'reps', label: 'Pull-ups', reps: 6 },
+        { type: 'rest', label: 'Rest', duration: 60 },
+      ],
+    }],
+  },
+  {
+    name: 'Dumbbell Full-Body Strength',
+    desc: '4 exercises · 4 sets · weighted · 90s rest',
+    exercises: [
+      { name: 'Goblet squat', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Goblet squat', reps: 10, weighted: true, plannedWeight: 20 },
+        { type: 'rest', label: 'Rest', duration: 90 },
+      ]},
+      { name: 'DB Romanian deadlift', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'RDL', reps: 10, weighted: true, plannedWeight: 20 },
+        { type: 'rest', label: 'Rest', duration: 90 },
+      ]},
+      { name: 'DB shoulder press', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Shoulder press', reps: 8, weighted: true, plannedWeight: 12 },
+        { type: 'rest', label: 'Rest', duration: 90 },
+      ]},
+      { name: 'DB row', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Right arm', reps: 10, weighted: true, plannedWeight: 15 },
+        { type: 'reps', label: 'Left arm',  reps: 10, weighted: true, plannedWeight: 15 },
+        { type: 'rest', label: 'Rest', duration: 90 },
+      ]},
+    ],
+  },
+  {
+    name: 'Hollow Body & Core',
+    desc: '3 rounds · timed core circuit · 30s rest',
+    exercises: [{
+      name: 'Core circuit',
+      repeat: 3,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Hollow hold', duration: 30 },
+        { type: 'timed', label: 'Plank',       duration: 45 },
+        { type: 'timed', label: 'Side plank right', duration: 30 },
+        { type: 'timed', label: 'Side plank left',  duration: 30 },
+        { type: 'timed', label: 'Dead bug',    duration: 40 },
+        { type: 'rest',  label: 'Rest',        duration: 30 },
+      ],
+    }],
+  },
+  {
+    name: 'Pull-Up Bar Hang Progression',
+    desc: '5 rounds · grip + scap work · 60s rest',
+    exercises: [{
+      name: 'Hang & scap',
+      repeat: 5,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Dead hang', duration: 30 },
+        { type: 'reps',  label: 'Active scapular pulls', reps: 8 },
+        { type: 'rest',  label: 'Rest', duration: 60 },
+      ],
+    }],
+  },
+  {
+    name: 'L-Sit Progression',
+    desc: '5 sets · tuck/L-sit holds · 60s rest',
+    exercises: [{
+      name: 'L-sit',
+      repeat: 5,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Tuck hold', duration: 20 },
+        { type: 'timed', label: 'One-leg right', duration: 10 },
+        { type: 'timed', label: 'One-leg left',  duration: 10 },
+        { type: 'rest',  label: 'Rest', duration: 60 },
+      ],
+    }],
+  },
+  {
+    name: 'Hip Mobility Flow',
+    desc: '2 rounds · timed mobility · 60s between',
+    exercises: [{
+      name: 'Hip flow',
+      repeat: 2,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: '90/90 hip switch', duration: 60 },
+        { type: 'timed', label: 'Pigeon right',     duration: 45 },
+        { type: 'timed', label: 'Pigeon left',      duration: 45 },
+        { type: 'timed', label: 'Cossack right',    duration: 30 },
+        { type: 'timed', label: 'Cossack left',     duration: 30 },
+        { type: 'timed', label: 'Deep squat hold',  duration: 60 },
+        { type: 'rest',  label: 'Rest',             duration: 60 },
+      ],
+    }],
+  },
+  {
+    name: 'Shoulder Prehab',
+    desc: '3 rounds · DB shoulder routine · 45s rest',
+    exercises: [{
+      name: 'Shoulder',
+      repeat: 3,
+      skipLastRest: true,
+      steps: [
+        { type: 'reps', label: 'Y-raise', reps: 12, weighted: true, plannedWeight: 2 },
+        { type: 'reps', label: 'T-raise', reps: 12, weighted: true, plannedWeight: 2 },
+        { type: 'reps', label: 'External rotation right', reps: 10, weighted: true, plannedWeight: 2 },
+        { type: 'reps', label: 'External rotation left',  reps: 10, weighted: true, plannedWeight: 2 },
+        { type: 'reps', label: 'Wall slides', reps: 10 },
+        { type: 'rest', label: 'Rest', duration: 45 },
+      ],
+    }],
+  },
+  {
+    name: 'Thoracic Spine Mobility',
+    desc: '2 rounds · t-spine flow · 30s rest',
+    exercises: [{
+      name: 'T-spine',
+      repeat: 2,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Cat-cow', duration: 60 },
+        { type: 'timed', label: 'Thread the needle right', duration: 45 },
+        { type: 'timed', label: 'Thread the needle left',  duration: 45 },
+        { type: 'timed', label: 'Open book right', duration: 45 },
+        { type: 'timed', label: 'Open book left',  duration: 45 },
+        { type: 'timed', label: 'Bar hang thoracic extension', duration: 30 },
+        { type: 'rest',  label: 'Rest', duration: 30 },
+      ],
+    }],
+  },
+  {
+    name: 'Calisthenics Skill Practice',
+    desc: '6 sets · skill work · 90s rest',
+    exercises: [{
+      name: 'Skills',
+      repeat: 6,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Tuck front lever', duration: 10 },
+        { type: 'timed', label: 'Tuck back lever',  duration: 10 },
+        { type: 'timed', label: 'Wall handstand',   duration: 30 },
+        { type: 'rest',  label: 'Rest', duration: 90 },
+      ],
+    }],
+  },
+  {
+    name: 'Pike & Pancake Flexibility',
+    desc: '3 rounds · lower-body flexibility · 30s rest',
+    exercises: [{
+      name: 'Flexibility',
+      repeat: 3,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Pike forward fold', duration: 60 },
+        { type: 'timed', label: 'Pancake straddle',  duration: 60 },
+        { type: 'timed', label: 'Hamstring lunge right', duration: 45 },
+        { type: 'timed', label: 'Hamstring lunge left',  duration: 45 },
+        { type: 'rest',  label: 'Rest', duration: 30 },
+      ],
+    }],
+  },
+  {
+    name: 'Pull-Up Strength (Weighted)',
+    desc: '5 sets · 5 reps · weighted · 2 min rest',
+    exercises: [{
+      name: 'Weighted pull-ups',
+      repeat: 5,
+      skipLastRest: true,
+      steps: [
+        { type: 'reps', label: 'Pull-ups', reps: 5, weighted: true, plannedWeight: 10 },
+        { type: 'rest', label: 'Rest', duration: 120 },
+      ],
+    }],
+  },
+  {
+    name: 'Dip Strength (Weighted)',
+    desc: '5 sets · 5 reps · weighted · 2 min rest',
+    exercises: [{
+      name: 'Weighted dips',
+      repeat: 5,
+      skipLastRest: true,
+      steps: [
+        { type: 'reps', label: 'Dips', reps: 5, weighted: true, plannedWeight: 10 },
+        { type: 'rest', label: 'Rest', duration: 120 },
+      ],
+    }],
+  },
+  {
+    name: 'Bodyweight EMOM (15 min)',
+    desc: '15 rounds · 40s work / 20s rest · alternating',
+    exercises: Array.from({ length: 15 }, (_, i) => {
+      const isPull = i % 2 === 0;
+      const isLast = i === 14;
+      return {
+        name: `Round ${i + 1}`,
+        repeat: 1,
+        steps: [
+          { type: 'timed', label: isPull ? '8 pull-ups' : '12 push-ups', duration: 40 },
+          ...(isLast ? [] : [{ type: 'rest', label: 'Rest', duration: 20 }]),
+        ],
+      };
+    }),
+  },
+  {
+    name: 'Dumbbell Leg Day',
+    desc: '4 exercises · 4 sets · weighted · 2 min rest',
+    exercises: [
+      { name: 'DB front squat', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Front squat', reps: 8, weighted: true, plannedWeight: 20 },
+        { type: 'rest', label: 'Rest', duration: 120 },
+      ]},
+      { name: 'Bulgarian split squat', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Right leg', reps: 8, weighted: true, plannedWeight: 12 },
+        { type: 'reps', label: 'Left leg',  reps: 8, weighted: true, plannedWeight: 12 },
+        { type: 'rest', label: 'Rest', duration: 120 },
+      ]},
+      { name: 'Single-leg RDL', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Right leg', reps: 8, weighted: true, plannedWeight: 12 },
+        { type: 'reps', label: 'Left leg',  reps: 8, weighted: true, plannedWeight: 12 },
+        { type: 'rest', label: 'Rest', duration: 90 },
+      ]},
+      { name: 'Calf raise', repeat: 4, skipLastRest: true, steps: [
+        { type: 'reps', label: 'Calf raise', reps: 15 },
+        { type: 'rest', label: 'Rest', duration: 60 },
+      ]},
+    ],
+  },
+  {
+    name: 'Anti-Extension Core',
+    desc: '4 rounds · dip-bar & DB core · 45s rest',
+    exercises: [{
+      name: 'Core',
+      repeat: 4,
+      skipLastRest: true,
+      steps: [
+        { type: 'reps',  label: 'Hanging knee raise', reps: 10 },
+        { type: 'reps',  label: 'Dip-bar leg raise', reps: 10 },
+        { type: 'timed', label: 'Suitcase carry hold right', duration: 30 },
+        { type: 'timed', label: 'Suitcase carry hold left',  duration: 30 },
+        { type: 'rest',  label: 'Rest', duration: 45 },
+      ],
+    }],
+  },
+  {
+    name: 'Wrist & Forearm Conditioning',
+    desc: '3 rounds · timed wrist prep + grip · 30s rest',
+    exercises: [{
+      name: 'Wrists',
+      repeat: 3,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Wrist circles', duration: 45 },
+        { type: 'timed', label: 'Quadruped wrist rocks palm down', duration: 45 },
+        { type: 'timed', label: 'Quadruped wrist rocks palm up',   duration: 45 },
+        { type: 'timed', label: 'Bar dead hang', duration: 30 },
+        { type: 'reps',  label: 'DB wrist curl', reps: 12, weighted: true, plannedWeight: 5 },
+        { type: 'rest',  label: 'Rest', duration: 30 },
+      ],
+    }],
+  },
+  {
+    name: 'Full-Body Calisthenics Circuit',
+    desc: '4 rounds · push/pull/legs/core · 90s rest',
+    exercises: [{
+      name: 'Circuit',
+      repeat: 4,
+      skipLastRest: true,
+      steps: [
+        { type: 'reps', label: 'Pull-ups',     reps: 6 },
+        { type: 'reps', label: 'Dips',         reps: 8 },
+        { type: 'reps', label: 'Squat',        reps: 15 },
+        { type: 'reps', label: 'Push-ups',     reps: 12 },
+        { type: 'reps', label: 'Hanging knee raise', reps: 10 },
+        { type: 'rest', label: 'Rest', duration: 90 },
+      ],
+    }],
+  },
+  {
+    name: 'Cooldown & Full-Body Mobility',
+    desc: '10-min wind-down flow · no rest',
+    exercises: [{
+      name: 'Cooldown',
+      repeat: 1,
+      steps: [
+        { type: 'timed', label: "Child's pose",          duration: 60 },
+        { type: 'timed', label: 'Downward dog',          duration: 60 },
+        { type: 'timed', label: 'Low lunge right',       duration: 45 },
+        { type: 'timed', label: 'Low lunge left',        duration: 45 },
+        { type: 'timed', label: 'Pigeon right',          duration: 60 },
+        { type: 'timed', label: 'Pigeon left',           duration: 60 },
+        { type: 'timed', label: 'Seated forward fold',   duration: 60 },
+        { type: 'timed', label: 'Spinal twist right',    duration: 45 },
+        { type: 'timed', label: 'Spinal twist left',     duration: 45 },
+        { type: 'timed', label: 'Dead hang decompression', duration: 30 },
       ],
     }],
   },
@@ -821,11 +1176,7 @@ function enterStep(i) {
 
   const nextBtn = document.getElementById('run-next');
 
-  // Announce
-  let spoken = label;
-  if (st.setTotal > 1) spoken = `${label}, set ${st.setIndex} of ${st.setTotal}`;
-  if (st.type === 'reps') spoken += `, ${st.reps} reps`;
-  speak(spoken);
+  speak(buildSpokenStep(st));
   beep(700, 150);
 
   if (st.type === 'timed' || st.type === 'rest') {
