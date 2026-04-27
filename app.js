@@ -1204,11 +1204,20 @@ function renderNextUp() {
   const el = document.getElementById('next-up');
   const now = new Date();
   const todayDow = now.getDay();
+  const todayKey = ymd(now.getTime());
 
-  // Only consider slots scheduled for TODAY (daily or matching dow).
+  // Trainings already completed today don't need to be reminded again.
+  const doneToday = new Set(
+    (state.history || [])
+      .filter((h) => h.completed && ymd(h.startedAt) === todayKey)
+      .map((h) => h.trainingId)
+  );
+
+  // Only consider slots scheduled for TODAY (daily or matching dow), and not yet done.
   const candidates = (state.schedule || [])
     .filter((s) => state.trainings.find((t) => t.id === s.trainingId))
     .filter((s) => s.dayOfWeek === 'daily' || s.dayOfWeek === todayDow)
+    .filter((s) => !doneToday.has(s.trainingId))
     .map((s) => {
       const [hh, mm] = (s.time || '09:00').split(':').map(Number);
       const at = new Date(now);
