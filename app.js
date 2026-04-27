@@ -69,6 +69,19 @@ async function idbDelete(store, key) {
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
+const TRAINING_PALETTE = [
+  '#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#f87171',
+  '#a78bfa', '#fb923c', '#34d399', '#22d3ee', '#e879f9',
+];
+
+function trainingColor(t) {
+  if (t?.color) return t.color;
+  const id = t?.id || t?.trainingId || '';
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return TRAINING_PALETTE[Math.abs(h) % TRAINING_PALETTE.length];
+}
+
 // ====== State ======
 const state = {
   trainings: [],
@@ -267,7 +280,7 @@ function renderTrainings() {
     el.innerHTML = `
       <div class="card-head">
         <div>
-          <strong>${escapeHtml(t.name || 'Untitled')}</strong>
+          <strong><span class="t-dot" style="background:${trainingColor(t)}"></span>${escapeHtml(t.name || 'Untitled')}</strong>
           <div class="card-sub">${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''} · ${formatDuration(estimateDuration(t))}</div>
         </div>
         <div class="row">
@@ -779,6 +792,22 @@ function openEditor(training) {
 function renderEditor() {
   const root = document.getElementById('editor-exercises');
   root.innerHTML = '';
+  // Color picker (top of editor body)
+  const t = state.editingTraining;
+  const colorRow = document.createElement('div');
+  colorRow.className = 'color-swatches';
+  const currentColor = t.color || trainingColor(t);
+  for (const c of TRAINING_PALETTE) {
+    const b = document.createElement('button');
+    b.className = 'color-swatch' + (c === currentColor ? ' selected' : '');
+    b.style.background = c;
+    b.addEventListener('click', () => {
+      t.color = c;
+      renderEditor();
+    });
+    colorRow.appendChild(b);
+  }
+  root.appendChild(colorRow);
   state.editingTraining.exercises.forEach((ex, exIdx) => {
     const el = document.createElement('div');
     el.className = 'exercise';
@@ -788,10 +817,6 @@ function renderEditor() {
         <label class="hint">× <input type="number" min="1" value="${ex.repeat || 1}" data-k="repeat" /> sets</label>
         <button class="danger" data-k="del">✕</button>
       </div>
-      <label class="row exercise-opt" style="gap: 0.4rem; margin-bottom: 0.5rem;">
-        <input type="checkbox" data-k="skipLast" ${ex.skipLastRest ? 'checked' : ''} />
-        <span>Skip last rest</span>
-      </label>
       <div class="steps"></div>
       <div class="row">
         <button data-add="timed">+ Timed</button>
@@ -801,7 +826,6 @@ function renderEditor() {
     `;
     el.querySelector('[data-k="name"]').addEventListener('input', (e) => { ex.name = e.target.value; });
     el.querySelector('[data-k="repeat"]').addEventListener('input', (e) => { ex.repeat = Math.max(1, parseInt(e.target.value) || 1); });
-    el.querySelector('[data-k="skipLast"]').addEventListener('change', (e) => { ex.skipLastRest = e.target.checked; });
     el.querySelector('[data-k="del"]').addEventListener('click', () => {
       state.editingTraining.exercises.splice(exIdx, 1);
       renderEditor();
@@ -984,6 +1008,7 @@ function renderSchedule() {
     list.appendChild(el);
   }
   renderNextUp();
+  renderCalendar();
 }
 
 function nextOccurrence(s) {
@@ -1009,6 +1034,170 @@ function formatNext(s) {
   const dayLabel = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : DAYS[d.getDay()];
   const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return s.dayOfWeek === 'daily' ? `Daily at ${time} · next ${dayLabel.toLowerCase()}` : `${dayLabel} at ${time}`;
+}
+
+// ====== Calendar ======
+let calendarMonth = (() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; })();
+
+function renderCalendar() {
+  const root = document.getElementById('calendar');
+  if (!root) return;
+  const { year, month } = calendarMonth;
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const startDow = first.getDay();
+  const daysInMonth = last.getDate();
+  const monthName = first.toLocaleString([], { month: 'long', year: 'numeric' });
+
+  // Group history by ymd
+  const sessionsByDay = {};
+  for (const h of state.history || []) {
+    if (!h.completed) continue;
+    const key = ymd(h.startedAt);
+    (sessionsByDay[key] = sessionsByDay[key] || []).push(h);
+  }
+
+  // Pre-compute scheduled-on-dow set for quick highlight
+  const scheduledDows = new Set();
+  let hasDaily = false;
+  for (const s of state.schedule || []) {
+    const t = state.trainings.find((x) => x.id === s.trainingId);
+    if (!t) continue;
+    if (s.dayOfWeek === 'daily') hasDaily = true;
+    else if (typeof s.dayOfWeek === 'number') scheduledDows.add(s.dayOfWeek);
+  }
+
+  const todayKey = ymd(Date.now());
+  const cells = [];
+  // Lead with previous month's tail
+  for (let i = startDow - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    cells.push({ date: d, otherMonth: true });
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ date: new Date(year, month, day), otherMonth: false });
+  }
+  // Trail to fill grid (multiple of 7)
+  while (cells.length % 7 !== 0) {
+    const d = new Date(year, month, daysInMonth + (cells.length - (startDow + daysInMonth - 1)));
+    cells.push({ date: d, otherMonth: true });
+  }
+
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = `
+    <div class="cal-head">
+      <button data-cal="prev">‹</button>
+      <span class="title">${monthName}</span>
+      <button data-cal="next">›</button>
+    </div>
+    <div class="cal-grid">
+      ${dows.map((d) => `<div class="cal-dow">${d}</div>`).join('')}
+      ${cells.map(({ date, otherMonth }) => {
+        const key = ymd(date.getTime());
+        const sessions = sessionsByDay[key] || [];
+        const dow = date.getDay();
+        const hasScheduled = !otherMonth && (hasDaily || scheduledDows.has(dow));
+        const dots = sessions.slice(0, 6).map((h) => {
+          const t = state.trainings.find((x) => x.id === h.trainingId) || h.trainingSnapshot || { id: h.trainingId };
+          return `<span class="dot" style="background:${trainingColor(t)}"></span>`;
+        }).join('');
+        const cls = [
+          'cal-day',
+          otherMonth ? 'other-month' : '',
+          key === todayKey ? 'today' : '',
+          hasScheduled ? 'has-scheduled' : '',
+        ].filter(Boolean).join(' ');
+        return `
+          <div class="${cls}" data-key="${key}" data-iso="${date.toISOString()}">
+            <span class="day-num">${date.getDate()}</span>
+            <div class="dots">${dots}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  root.innerHTML = html;
+
+  root.querySelector('[data-cal="prev"]').addEventListener('click', () => {
+    calendarMonth.month -= 1;
+    if (calendarMonth.month < 0) { calendarMonth.month = 11; calendarMonth.year -= 1; }
+    renderCalendar();
+  });
+  root.querySelector('[data-cal="next"]').addEventListener('click', () => {
+    calendarMonth.month += 1;
+    if (calendarMonth.month > 11) { calendarMonth.month = 0; calendarMonth.year += 1; }
+    renderCalendar();
+  });
+  root.querySelectorAll('.cal-day').forEach((cell) => {
+    cell.addEventListener('click', () => showDayModal(new Date(cell.dataset.iso)));
+  });
+}
+
+function showDayModal(date) {
+  const key = ymd(date.getTime());
+  const dow = date.getDay();
+  const completed = (state.history || []).filter((h) => h.completed && ymd(h.startedAt) === key);
+  const scheduled = (state.schedule || []).filter((s) => {
+    if (!state.trainings.find((x) => x.id === s.trainingId)) return false;
+    return s.dayOfWeek === 'daily' || s.dayOfWeek === dow;
+  });
+
+  const overlay = document.createElement('div');
+  overlay.className = 'session-detail-overlay';
+  const dateLabel = date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const completedHtml = completed.length
+    ? completed.map((h) => {
+        const tForColor = state.trainings.find((x) => x.id === h.trainingId) || h.trainingSnapshot || { id: h.trainingId };
+        const time = new Date(h.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `<div class="day-modal-item" data-id="${h.id}">
+          <span class="t-dot" style="background:${trainingColor(tForColor)}"></span>
+          <span>${escapeHtml(h.trainingName)}</span>
+          <span class="hint">${time}</span>
+        </div>`;
+      }).join('')
+    : '<p class="hint">No completed sessions.</p>';
+  const scheduledHtml = scheduled.length
+    ? scheduled.map((s) => {
+        const t = state.trainings.find((x) => x.id === s.trainingId);
+        return `<div class="day-modal-item" data-train="${t.id}">
+          <span class="t-dot" style="background:${trainingColor(t)}"></span>
+          <span>${escapeHtml(t.name)}</span>
+          <span class="hint">${s.time}${s.dayOfWeek === 'daily' ? ' · daily' : ''}</span>
+        </div>`;
+      }).join('')
+    : '<p class="hint">Nothing scheduled.</p>';
+
+  overlay.innerHTML = `
+    <div class="session-detail-card">
+      <h3>${dateLabel}</h3>
+      <h4 class="section-h" style="margin-top: 0.5rem;">Completed</h4>
+      <div class="day-modal-list">${completedHtml}</div>
+      <h4 class="section-h">Scheduled</h4>
+      <div class="day-modal-list">${scheduledHtml}</div>
+      <div class="row" style="margin-top: 1rem; justify-content: flex-end;">
+        <button data-act="close">Close</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.dataset.act === 'close') { overlay.remove(); return; }
+    const completedItem = e.target.closest('.day-modal-item[data-id]');
+    if (completedItem) {
+      const session = state.history.find((h) => h.id === completedItem.dataset.id);
+      overlay.remove();
+      if (session) showSessionDetail(session);
+      return;
+    }
+    const schedItem = e.target.closest('.day-modal-item[data-train]');
+    if (schedItem) {
+      const t = state.trainings.find((x) => x.id === schedItem.dataset.train);
+      if (t) {
+        overlay.remove();
+        startRun(t);
+      }
+    }
+  });
+  document.body.appendChild(overlay);
 }
 
 function renderNextUp() {
@@ -1109,14 +1298,7 @@ function expandSteps(training) {
   for (const ex of training.exercises || []) {
     const repeat = Math.max(1, ex.repeat || 1);
     for (let r = 0; r < repeat; r++) {
-      let steps = ex.steps || [];
-      // On the last iteration, optionally drop trailing rest steps
-      if (ex.skipLastRest && r === repeat - 1) {
-        let end = steps.length;
-        while (end > 0 && steps[end - 1].type === 'rest') end--;
-        steps = steps.slice(0, end);
-      }
-      for (const st of steps) {
+      for (const st of ex.steps || []) {
         out.push({
           exerciseName: ex.name || 'Exercise',
           setIndex: r + 1,
@@ -1131,6 +1313,9 @@ function expandSteps(training) {
       }
     }
   }
+  // Always drop trailing rest steps at the end of the whole training — no point
+  // resting after the final exercise. Rests between exercises are kept.
+  while (out.length && out[out.length - 1].type === 'rest') out.pop();
   return out;
 }
 
@@ -1169,9 +1354,20 @@ function prepThenEnter(i) {
   if (i >= run.steps.length) return finishRun();
   run.index = i;
   const next = run.steps[i];
+  const prev = i > 0 ? run.steps[i - 1] : null;
   const delay = state.settings.prepDelay | 0;
-  // Skip prep for rest steps and when delay is disabled
-  if (delay <= 0 || next.type === 'rest') {
+  // Prep only before timed steps that don't follow a rest. Reps are user-confirmed
+  // (no auto-start), and rest already provides time to get ready for the next step.
+  // Skip prep when:
+  //   - delay is 0 (disabled)
+  //   - next step is rest (rest is its own pause)
+  //   - next step is reps (user confirms manually, no auto-start to prepare for)
+  //   - previous step was a rest (rest already gave time to position)
+  const skipPrep = delay <= 0
+    || next.type === 'rest'
+    || next.type === 'reps'
+    || (prev && prev.type === 'rest');
+  if (skipPrep) {
     run.prepping = false;
     return enterStep(i);
   }
@@ -1534,6 +1730,7 @@ async function loadHistory() {
 }
 
 function renderHistory() {
+  renderCalendar();
   if (!state.stats) return;
   const s = state.stats;
   const nextLvlXp = xpForLevel(s.level + 1);
@@ -1584,11 +1781,12 @@ function renderHistory() {
       const mm = Math.floor(h.durationSec / 60);
       const ss = h.durationSec % 60;
       const dur = mm > 0 ? `${mm}m ${ss}s` : `${ss}s`;
+      const tForColor = state.trainings.find((x) => x.id === h.trainingId) || h.trainingSnapshot || { id: h.trainingId };
       return `
         <div class="card history-entry" data-id="${h.id}">
           <div class="card-head">
             <div>
-              <strong>${escapeHtml(h.trainingName)}</strong>
+              <strong><span class="t-dot" style="background:${trainingColor(tForColor)}"></span>${escapeHtml(h.trainingName)}</strong>
               <div class="date">${when}</div>
             </div>
             <span class="pill ${h.completed ? 'timed' : 'rest'}">${h.completed ? 'Completed' : 'Partial'}</span>

@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Training Timer</title>
-  <link rel="stylesheet" href="styles.css?v=32" />
-  <link rel="manifest" href="manifest.json?v=32" crossorigin="use-credentials" />
+  <link rel="stylesheet" href="styles.css?v=33" />
+  <link rel="manifest" href="manifest.json?v=33" crossorigin="use-credentials" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="theme-color" content="#0f1115" />
@@ -15,7 +15,7 @@
 </head>
 <body>
   <header>
-    <h1>Training Timer <span class="app-ver">v1.16</span></h1>
+    <h1>Training Timer <span class="app-ver">v1.17</span></h1>
     <nav>
       <button data-view="schedule" class="active">Schedule</button>
       <button data-view="trainings">Trainings</button>
@@ -30,10 +30,12 @@
     <!-- SCHEDULE VIEW -->
     <section id="view-schedule" class="view swipe-view">
       <div class="toolbar">
-        <h2>Weekly Schedule</h2>
+        <h2>Schedule</h2>
         <button id="add-slot">+ Add slot</button>
       </div>
       <div id="next-up" class="next-up"></div>
+      <div id="calendar" class="calendar"></div>
+      <h3 class="section-h">Weekly recurring</h3>
       <div id="schedule-list" class="card-list"></div>
       <p class="hint">Reminders use browser notifications. <button id="enable-notif">Enable notifications</button></p>
     </section>
@@ -105,7 +107,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=33"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
