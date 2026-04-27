@@ -1202,21 +1202,48 @@ function showDayModal(date) {
 
 function renderNextUp() {
   const el = document.getElementById('next-up');
-  const upcoming = state.schedule
+  const now = new Date();
+  const todayDow = now.getDay();
+
+  // Only consider slots scheduled for TODAY (daily or matching dow).
+  const candidates = (state.schedule || [])
     .filter((s) => state.trainings.find((t) => t.id === s.trainingId))
-    .map((s) => ({ s, at: nextOccurrence(s) }))
-    .sort((a, b) => a.at - b.at);
-  if (!upcoming.length) { el.classList.add('empty'); return; }
+    .filter((s) => s.dayOfWeek === 'daily' || s.dayOfWeek === todayDow)
+    .map((s) => {
+      const [hh, mm] = (s.time || '09:00').split(':').map(Number);
+      const at = new Date(now);
+      at.setHours(hh, mm, 0, 0);
+      return { s, at };
+    });
+
+  if (!candidates.length) { el.classList.add('empty'); el.innerHTML = ''; return; }
+
+  // Prefer next upcoming today; otherwise show the most recent overdue today.
+  const upcoming = candidates.filter((c) => c.at >= now).sort((a, b) => a.at - b.at);
+  const overdue  = candidates.filter((c) => c.at <  now).sort((a, b) => b.at - a.at);
+  const pick = upcoming[0] || overdue[0];
+  if (!pick) { el.classList.add('empty'); el.innerHTML = ''; return; }
+
   el.classList.remove('empty');
-  const { s, at } = upcoming[0];
+  const { s, at } = pick;
   const t = state.trainings.find((x) => x.id === s.trainingId);
-  const mins = Math.round((at - new Date()) / 60000);
-  const when = mins < 60 ? `in ${mins} min` : mins < 60 * 24 ? `in ${Math.round(mins/60)}h` : `in ${Math.round(mins/60/24)}d`;
-  el.innerHTML = `
-    <div><strong>Next:</strong> ${escapeHtml(t.name)} ${when}</div>
-    <div class="card-sub">${formatNext(s)}</div>
-    <div style="margin-top: 0.5rem;"><button class="primary" id="start-next">Start now</button></div>
-  `;
+  const time = at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (at < now) {
+    el.innerHTML = `
+      <div><strong>Overdue:</strong> <span class="t-dot" style="background:${trainingColor(t)}"></span>${escapeHtml(t.name)}</div>
+      <div class="card-sub">Was scheduled at ${time} — start now</div>
+      <div style="margin-top: 0.5rem;"><button class="primary" id="start-next">Start now</button></div>
+    `;
+  } else {
+    const mins = Math.round((at - now) / 60000);
+    const when = mins < 60 ? `in ${mins} min` : `in ${Math.round(mins / 60)}h`;
+    el.innerHTML = `
+      <div><strong>Next:</strong> <span class="t-dot" style="background:${trainingColor(t)}"></span>${escapeHtml(t.name)} ${when}</div>
+      <div class="card-sub">Today at ${time}</div>
+      <div style="margin-top: 0.5rem;"><button class="primary" id="start-next">Start now</button></div>
+    `;
+  }
   document.getElementById('start-next').addEventListener('click', () => startRun(t));
 }
 
