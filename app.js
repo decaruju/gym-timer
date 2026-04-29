@@ -88,15 +88,34 @@ const state = {
   schedule: [],
   editingTraining: null,
   run: null,
-  settings: { prepDelay: 5 },
+  settings: { prepDelay: 5, frozenDates: [] },
 };
 
 async function loadSettings() {
   const m = await idbGet('meta', 'settings');
-  if (m && typeof m.prepDelay === 'number') state.settings.prepDelay = m.prepDelay;
+  if (!m) return;
+  if (typeof m.prepDelay === 'number') state.settings.prepDelay = m.prepDelay;
+  if (Array.isArray(m.frozenDates)) state.settings.frozenDates = m.frozenDates;
 }
 async function saveSettings() {
-  await idbPut('meta', { key: 'settings', prepDelay: state.settings.prepDelay });
+  await idbPut('meta', {
+    key: 'settings',
+    prepDelay: state.settings.prepDelay,
+    frozenDates: state.settings.frozenDates,
+  });
+}
+
+async function freezeStreakToday() {
+  const today = ymd(Date.now());
+  if (state.settings.frozenDates.includes(today)) {
+    toast('Streak already frozen today');
+    return;
+  }
+  state.settings.frozenDates.push(today);
+  await saveSettings();
+  state.stats = computeStats(state.history);
+  renderHistory();
+  toast('🥶 Streak frozen for today');
 }
 
 // ====== Wake lock (keep screen on) ======
@@ -1690,6 +1709,7 @@ function computeStats(history) {
   const level = levelForXp(xp);
 
   const days = new Set(completed.map((h) => ymd(h.startedAt)));
+  for (const d of (state.settings.frozenDates || [])) days.add(d);
   const sorted = [...days].sort();
   let longest = 0, streak = 0, cur = 0, prev = null;
   for (const d of sorted) {
@@ -1797,6 +1817,18 @@ function renderHistory() {
       <div class="sub">minutes trained</div>
     </div>
   `;
+
+  const freezeRow = document.getElementById('freeze-row');
+  if (freezeRow) {
+    const today = ymd(Date.now());
+    const frozen = state.settings.frozenDates?.includes(today);
+    freezeRow.innerHTML = frozen
+      ? `<button disabled>🥶 Streak frozen today</button>
+         <span class="hint">${state.settings.frozenDates.length} day${state.settings.frozenDates.length === 1 ? '' : 's'} frozen total</span>`
+      : `<button id="freeze-btn">🥶 Freeze streak today</button>
+         <span class="hint">Counts today as a training day</span>`;
+    document.getElementById('freeze-btn')?.addEventListener('click', freezeStreakToday);
+  }
 
   document.getElementById('achievements').innerHTML = ACHIEVEMENTS.map((a) => `
     <div class="ach ${a.test(s) ? 'unlocked' : ''}">

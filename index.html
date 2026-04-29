@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Training Timer</title>
-  <link rel="stylesheet" href="styles.css?v=35" />
-  <link rel="manifest" href="manifest.json?v=35" crossorigin="use-credentials" />
+  <link rel="stylesheet" href="styles.css?v=36" />
+  <link rel="manifest" href="manifest.json?v=36" crossorigin="use-credentials" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="theme-color" content="#0f1115" />
@@ -15,7 +15,7 @@
 </head>
 <body>
   <header>
-    <h1>Training Timer <span class="app-ver">v1.18.1</span></h1>
+    <h1>Training Timer <span class="app-ver">v1.19</span></h1>
     <nav>
       <button data-view="schedule" class="active">Schedule</button>
       <button data-view="trainings">Trainings</button>
@@ -53,6 +53,7 @@
     <section id="view-history" class="view swipe-view">
       <div class="toolbar"><h2>Your progress</h2></div>
       <div id="stats-cards" class="stats-cards"></div>
+      <div id="freeze-row" class="row" style="margin: 0.5rem 0;"></div>
       <h3 class="section-h">Achievements</h3>
       <div id="achievements" class="achievements"></div>
       <h3 class="section-h">Recent sessions</h3>
@@ -107,7 +108,7 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=36"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
