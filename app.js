@@ -1636,6 +1636,13 @@ async function finishRun() {
   };
   await idbPut('history', entry);
 
+  // If this day was frozen as a make-up, remove the freeze — real training overrides it.
+  const today = ymd(Date.now());
+  if (state.settings.frozenDates?.includes(today)) {
+    state.settings.frozenDates = state.settings.frozenDates.filter((d) => d !== today);
+    await saveSettings();
+  }
+
   const before = state.stats || emptyStats();
   state.history = (await idbAll('history')) || [];
   state.stats = computeStats(state.history);
