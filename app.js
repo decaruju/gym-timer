@@ -762,6 +762,38 @@ const TRAINING_TEMPLATES = [
       ],
     }],
   },
+  {
+    name: 'Forearm Training (Dumbbells)',
+    desc: '6 exercises · flexors, extensors, grip · weighted',
+    exercises: [
+      { name: 'Wrist curl', repeat: 4, steps: [
+        { type: 'reps', label: 'Palms up', reps: 12, weighted: true, plannedWeight: 8 },
+        { type: 'rest', label: 'Rest', duration: 60 },
+      ]},
+      { name: 'Reverse wrist curl', repeat: 4, steps: [
+        { type: 'reps', label: 'Palms down', reps: 12, weighted: true, plannedWeight: 5 },
+        { type: 'rest', label: 'Rest', duration: 60 },
+      ]},
+      { name: 'Hammer curl', repeat: 4, steps: [
+        { type: 'reps', label: 'Right arm', reps: 10, weighted: true, plannedWeight: 10 },
+        { type: 'reps', label: 'Left arm',  reps: 10, weighted: true, plannedWeight: 10 },
+        { type: 'rest', label: 'Rest', duration: 75 },
+      ]},
+      { name: 'Reverse curl', repeat: 4, steps: [
+        { type: 'reps', label: 'Reverse curl', reps: 10, weighted: true, plannedWeight: 8 },
+        { type: 'rest', label: 'Rest', duration: 60 },
+      ]},
+      { name: 'Pronation / supination', repeat: 3, steps: [
+        { type: 'reps', label: 'Right arm', reps: 12, weighted: true, plannedWeight: 5 },
+        { type: 'reps', label: 'Left arm',  reps: 12, weighted: true, plannedWeight: 5 },
+        { type: 'rest', label: 'Rest', duration: 60 },
+      ]},
+      { name: 'Farmer hold', repeat: 3, steps: [
+        { type: 'timed', label: 'Heavy DBs hold', duration: 30 },
+        { type: 'rest',  label: 'Rest', duration: 90 },
+      ]},
+    ],
+  },
 ];
 
 function showTemplatePicker() {
