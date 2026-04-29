@@ -539,6 +539,8 @@ input:focus, select:focus { outline: 1px solid var(--accent2); }
 .cal-day.today { border-color: var(--accent); }
 .cal-day.has-scheduled { background: linear-gradient(135deg, var(--panel2), #2a3144); }
 .cal-day .day-num { font-weight: 600; }
+.cal-day .frozen-icon { margin-left: 0.2rem; font-size: 0.7rem; }
+.cal-day.frozen { background: linear-gradient(135deg, var(--panel2), #1e3a4a); }
 .cal-day .dots {
   margin-top: auto;
   display: flex;

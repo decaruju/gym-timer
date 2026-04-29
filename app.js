@@ -105,17 +105,26 @@ async function saveSettings() {
   });
 }
 
+function trainedToday() {
+  const today = ymd(Date.now());
+  return (state.history || []).some((h) => h.completed && ymd(h.startedAt) === today);
+}
+
 async function freezeStreakToday() {
   const today = ymd(Date.now());
   if (state.settings.frozenDates.includes(today)) {
     toast('Streak already frozen today');
     return;
   }
+  if (trainedToday()) {
+    toast('You already trained today');
+    return;
+  }
   state.settings.frozenDates.push(today);
   await saveSettings();
   state.stats = computeStats(state.history);
   renderHistory();
-  toast('🥶 Streak frozen for today');
+  toast('🧊 Streak frozen for today');
 }
 
 // ====== Wake lock (keep screen on) ======
@@ -1116,6 +1125,7 @@ function renderCalendar() {
         const sessions = sessionsByDay[key] || [];
         const dow = date.getDay();
         const hasScheduled = !otherMonth && (hasDaily || scheduledDows.has(dow));
+        const isFrozen = (state.settings.frozenDates || []).includes(key);
         const dots = sessions.slice(0, 6).map((h) => {
           const t = state.trainings.find((x) => x.id === h.trainingId) || h.trainingSnapshot || { id: h.trainingId };
           return `<span class="dot" style="background:${trainingColor(t)}"></span>`;
@@ -1125,10 +1135,12 @@ function renderCalendar() {
           otherMonth ? 'other-month' : '',
           key === todayKey ? 'today' : '',
           hasScheduled ? 'has-scheduled' : '',
+          isFrozen ? 'frozen' : '',
         ].filter(Boolean).join(' ');
+        const frozenIcon = isFrozen ? '<span class="frozen-icon" title="Streak frozen">🧊</span>' : '';
         return `
           <div class="${cls}" data-key="${key}" data-iso="${date.toISOString()}">
-            <span class="day-num">${date.getDate()}</span>
+            <span class="day-num">${date.getDate()}${frozenIcon}</span>
             <div class="dots">${dots}</div>
           </div>
         `;
@@ -1822,12 +1834,18 @@ function renderHistory() {
   if (freezeRow) {
     const today = ymd(Date.now());
     const frozen = state.settings.frozenDates?.includes(today);
-    freezeRow.innerHTML = frozen
-      ? `<button disabled>🥶 Streak frozen today</button>
-         <span class="hint">${state.settings.frozenDates.length} day${state.settings.frozenDates.length === 1 ? '' : 's'} frozen total</span>`
-      : `<button id="freeze-btn">🥶 Freeze streak today</button>
-         <span class="hint">Counts today as a training day</span>`;
-    document.getElementById('freeze-btn')?.addEventListener('click', freezeStreakToday);
+    const trained = trainedToday();
+    if (frozen) {
+      freezeRow.innerHTML = `<button disabled>🧊 Streak frozen today</button>
+        <span class="hint">${state.settings.frozenDates.length} day${state.settings.frozenDates.length === 1 ? '' : 's'} frozen total</span>`;
+    } else if (trained) {
+      freezeRow.innerHTML = `<button disabled>✓ Trained today</button>
+        <span class="hint">Streak counted automatically</span>`;
+    } else {
+      freezeRow.innerHTML = `<button id="freeze-btn">🧊 Freeze streak today</button>
+        <span class="hint">Counts today as a training day</span>`;
+      document.getElementById('freeze-btn').addEventListener('click', freezeStreakToday);
+    }
   }
 
   document.getElementById('achievements').innerHTML = ACHIEVEMENTS.map((a) => `
