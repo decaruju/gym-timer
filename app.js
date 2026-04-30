@@ -1979,6 +1979,12 @@ function showSessionDetail(h) {
     `;
   }).join('') : '<p class="hint">No step-level data recorded for this session.</p>';
 
+  const snapshot = h.trainingSnapshot;
+  const trainingExists = !!state.trainings.find((t) => t.id === h.trainingId);
+  const restoreBtn = snapshot
+    ? `<button data-act="restore">${trainingExists ? 'Restore (replace)' : 'Restore training'}</button>`
+    : '';
+
   const overlay = document.createElement('div');
   overlay.className = 'session-detail-overlay';
   overlay.innerHTML = `
@@ -1989,7 +1995,8 @@ function showSessionDetail(h) {
         ${h.completed ? '' : ' · <em>partial</em>'}
       </div>
       <ul class="step-log">${items}</ul>
-      <div class="row" style="margin-top: 1rem; justify-content: flex-end;">
+      <div class="row" style="margin-top: 1rem; justify-content: flex-end; flex-wrap: wrap;">
+        ${restoreBtn}
         <button class="danger" data-act="delete">Delete</button>
         <button data-act="close">Close</button>
       </div>
@@ -2003,6 +2010,15 @@ function showSessionDetail(h) {
     await idbDelete('history', h.id);
     overlay.remove();
     await loadHistory();
+  });
+  overlay.querySelector('[data-act="restore"]')?.addEventListener('click', async () => {
+    if (trainingExists && !confirm(`A training with this id already exists. Replace it with the snapshot from ${when}?`)) return;
+    const restored = JSON.parse(JSON.stringify(snapshot));
+    if (!restored.id) restored.id = h.trainingId || uid();
+    await idbPut('trainings', restored);
+    await loadTrainings();
+    toast(trainingExists ? 'Training replaced' : 'Training restored');
+    overlay.remove();
   });
   document.body.appendChild(overlay);
 }
