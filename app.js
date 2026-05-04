@@ -194,8 +194,45 @@ function buildSpokenStep(st) {
       parts.push(spokenDuration(st.duration));
     }
   }
+  if (st.bpm) parts.push(`at ${st.bpm} BPM`);
   if (st.setTotal > 1) parts.push(`set ${st.setIndex} of ${st.setTotal}`);
   return parts.join(', ');
+}
+
+function metronomeClick() {
+  try {
+    const ctx = beep.ctx || (beep.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 1500;
+    osc.connect(g);
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  } catch {}
+}
+
+function startMetronome(bpm) {
+  stopMetronome();
+  const run = state.run;
+  if (!run || !bpm || bpm <= 0) return;
+  const interval = 60000 / bpm;
+  metronomeClick();
+  run.metronomeId = setInterval(() => {
+    if (state.run?.paused) return;
+    metronomeClick();
+  }, interval);
+}
+
+function stopMetronome() {
+  const run = state.run;
+  if (run?.metronomeId) {
+    clearInterval(run.metronomeId);
+    run.metronomeId = null;
+  }
 }
 
 function beep(freq = 660, duration = 200) {
@@ -939,6 +976,20 @@ function renderStepEditor(ex, st, idx) {
       </div>
     `;
   }
+  if (st.type === 'timed' || st.type === 'reps') {
+    const hasBpm = !!st.bpm;
+    html += `
+      <div class="step-extra">
+        <label class="row" style="gap: 0.3rem; align-items: center;">
+          <input type="checkbox" data-k="metronome" ${hasBpm ? 'checked' : ''} />
+          <span>Metronome</span>
+        </label>
+        <input type="number" min="20" max="300" step="1" placeholder="bpm" data-k="bpm"
+          value="${st.bpm ?? ''}" ${hasBpm ? '' : 'hidden'} />
+        <span class="hint" data-k="bpm-unit" ${hasBpm ? '' : 'hidden'}>bpm</span>
+      </div>
+    `;
+  }
   el.innerHTML = html;
   el.querySelector('[data-k="label"]').addEventListener('input', (e) => { st.label = e.target.value; });
   const numInput = el.querySelector('[data-k="reps"], [data-k="duration"]');
@@ -964,6 +1015,26 @@ function renderStepEditor(ex, st, idx) {
     wInput.addEventListener('input', (e) => {
       const v = parseFloat(e.target.value);
       st.plannedWeight = Number.isFinite(v) && v >= 0 ? v : null;
+    });
+  }
+  if (st.type === 'timed' || st.type === 'reps') {
+    const mCheck = el.querySelector('[data-k="metronome"]');
+    const mInput = el.querySelector('[data-k="bpm"]');
+    const mUnit = el.querySelector('[data-k="bpm-unit"]');
+    mCheck.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        if (!st.bpm) { st.bpm = 180; mInput.value = 180; }
+        mInput.hidden = false;
+        mUnit.hidden = false;
+      } else {
+        st.bpm = null;
+        mInput.hidden = true;
+        mUnit.hidden = true;
+      }
+    });
+    mInput.addEventListener('input', (e) => {
+      const v = parseInt(e.target.value);
+      st.bpm = Number.isFinite(v) && v > 0 ? v : null;
     });
   }
   el.querySelector('[data-k="del"]').addEventListener('click', () => {
@@ -1408,6 +1479,7 @@ function expandSteps(training) {
           reps: st.reps,
           weighted: !!st.weighted,
           plannedWeight: st.plannedWeight,
+          bpm: st.bpm || null,
         });
       }
     }
@@ -1444,6 +1516,7 @@ function clearRunTimer() {
     clearInterval(state.run.timerId);
     state.run.timerId = null;
   }
+  stopMetronome();
 }
 
 function prepThenEnter(i) {
@@ -1526,6 +1599,7 @@ function enterStep(i, fromPrep = false) {
 
   if (!fromPrep) speak(buildSpokenStep(st));
   beep(700, 150);
+  if (st.bpm) startMetronome(st.bpm);
 
   if (st.type === 'timed' || st.type === 'rest') {
     run.remaining = st.duration;
