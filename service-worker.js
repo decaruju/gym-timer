@@ -1,10 +1,11 @@
 // Bump this version string to force clients to re-cache after you update files.
-const CACHE = 'training-timer-v41';
+const CACHE = 'training-timer-v42';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './sync.js',
   './manifest.json',
   './icon.svg',
   './icon-192.png',

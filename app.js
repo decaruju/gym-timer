@@ -49,22 +49,24 @@ async function idbGet(store, key) {
 
 async function idbPut(store, value) {
   const db = await openDB();
-  return new Promise((res, rej) => {
+  await new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     tx.objectStore(store).put(value);
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
   });
+  window.Sync?.pushRow(store, value);
 }
 
 async function idbDelete(store, key) {
   const db = await openDB();
-  return new Promise((res, rej) => {
+  await new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     tx.objectStore(store).delete(key);
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
   });
+  window.Sync?.deleteRow(store, key);
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -2227,6 +2229,60 @@ window.addEventListener('appinstalled', () => {
   document.getElementById('install-btn').hidden = true;
 });
 
+// ====== Cloud sync wiring ======
+// Expose IDB primitives + reload hook so sync.js can pull cloud → local and
+// refresh the UI without app.js needing to import anything.
+window.openDB = openDB;
+window.idbAll = idbAll;
+window.idbGet = idbGet;
+window.toast = toast;
+window.reloadAllFromIdb = async function () {
+  await loadSettings();
+  const prepInput = document.getElementById('prep-delay');
+  if (prepInput) prepInput.value = state.settings.prepDelay;
+  await loadTrainings();
+  await loadSchedule();
+  await loadHistory();
+  scheduleReminders();
+};
+
+function renderSyncPanel() {
+  const signedOut = document.getElementById('sync-signed-out');
+  const signedIn = document.getElementById('sync-signed-in');
+  if (!signedOut || !signedIn) return;
+  const user = window.Sync?.user;
+  signedOut.hidden = !!user;
+  signedIn.hidden = !user;
+  if (user) {
+    document.getElementById('sync-user-email').textContent = user.email || user.id;
+  }
+}
+
+(function wireSyncUI() {
+  const sendBtn = document.getElementById('sync-send-link');
+  const emailInput = document.getElementById('sync-email');
+  const outBtn = document.getElementById('sync-signout');
+  const nowBtn = document.getElementById('sync-now');
+  if (sendBtn) sendBtn.addEventListener('click', async () => {
+    const email = (emailInput?.value || '').trim();
+    if (!email) { toast('Enter your email'); return; }
+    try {
+      await window.Sync.signInWithEmail(email);
+      toast('Magic link sent — check your email');
+    } catch (e) { toast('Error: ' + (e.message || e)); }
+  });
+  if (outBtn) outBtn.addEventListener('click', async () => {
+    try { await window.Sync.signOut(); toast('Signed out'); }
+    catch (e) { toast('Error: ' + (e.message || e)); }
+  });
+  if (nowBtn) nowBtn.addEventListener('click', async () => {
+    nowBtn.disabled = true;
+    try { await window.Sync.syncNow(); toast('Synced'); }
+    catch (e) { toast('Sync error: ' + (e.message || e)); }
+    finally { nowBtn.disabled = false; }
+  });
+})();
+
 // ====== Init ======
 (async function init() {
   await loadSettings();
@@ -2240,4 +2296,12 @@ window.addEventListener('appinstalled', () => {
   setInterval(() => {
     renderNextUp();
   }, 60 * 1000);
+
+  if (window.Sync?.isConfigured()) {
+    window.Sync.onChange(renderSyncPanel);
+    window.Sync.init();
+    renderSyncPanel();
+  } else {
+    document.getElementById('sync-panel')?.remove();
+  }
 })();

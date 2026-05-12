@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Training Timer</title>
-  <link rel="stylesheet" href="styles.css?v=41" />
-  <link rel="manifest" href="manifest.json?v=41" crossorigin="use-credentials" />
+  <link rel="stylesheet" href="styles.css?v=42" />
+  <link rel="manifest" href="manifest.json?v=42" crossorigin="use-credentials" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="theme-color" content="#0f1115" />
@@ -65,6 +65,24 @@
         <span class="hint">seconds before each exercise</span>
       </label>
 
+      <h3 class="section-h">Cloud sync</h3>
+      <div id="sync-panel">
+        <div id="sync-signed-out">
+          <div class="row" style="gap: 0.5rem;">
+            <input type="email" id="sync-email" placeholder="you@example.com" style="flex: 1;" />
+            <button id="sync-send-link">Send magic link</button>
+          </div>
+          <p class="hint">Sign in with email to back up & sync across devices.</p>
+        </div>
+        <div id="sync-signed-in" hidden>
+          <div class="row" style="gap: 0.5rem; flex-wrap: wrap;">
+            <span class="hint">Signed in as <strong id="sync-user-email"></strong></span>
+            <button id="sync-now">Sync now</button>
+            <button id="sync-signout">Sign out</button>
+          </div>
+        </div>
+      </div>
+
       <h3 class="section-h">Data</h3>
       <div class="row">
         <button id="export-data">Export JSON</button>
@@ -108,7 +126,15 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=41"></script>
+  <script>
+    window.SUPABASE_CONFIG = {
+      url: 'https://vhnglwdpolpvopnzblny.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZobmdsd2Rwb2xwdm9wbnpibG55Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTYyNjcsImV4cCI6MjA5NDE3MjI2N30.VBPBLS8gXRITdDP-g0MvSjg6AA9PZ9geDmg1lWr3vSU',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="sync.js?v=42"></script>
+  <script src="app.js?v=42"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
