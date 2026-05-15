@@ -398,6 +398,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Ankle stretch',
     desc: '3 sets of L/R/rest, 1 min each',
+    description: `Stretch — sit with one leg straight, hook a towel or band under the ball of the foot.
+• Right leg (60s) — pull toes toward you, knee flat, breathe into the calf stretch.
+• Left leg (60s) — same hold, equal tension.
+• Rest (60s) — shake out feet, roll ankles in both directions.`,
     exercises: [{
       name: 'Stretch',
       repeat: 3,
@@ -411,6 +415,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Bicep curls',
     desc: '3 sets · 10 reps per arm · 3 min rest · weighted',
+    description: `Curls — stand tall, dumbbell in hand, palm facing forward, elbow pinned to your side.
+• Right arm (10 reps) — curl up by squeezing the bicep, lower under control over ~2s, no swing.
+• Left arm (10 reps) — same tempo, full range of motion.
+• Rest (3 min) — shake out arms, stay loose.`,
     exercises: [{
       name: 'Curls',
       repeat: 3,
@@ -424,6 +432,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Push/Pull/Legs (PPL) day',
     desc: 'Bench, row, squat — 4 sets, weighted',
+    description: `Three compound lifts, 4 working sets each. Warm up before the first set of every lift.
+• Bench press (4 × 8) — lie flat, grip just outside shoulders, lower bar to mid-chest, press up. 2 min rest between sets.
+• Barbell row (4 × 8) — hinge at hips, back flat, pull bar to lower ribs, squeeze shoulder blades. 2 min rest.
+• Squat (4 × 8) — bar high on traps, brace core, sit back/down until thighs parallel, drive up. 2:30 rest.`,
     exercises: [
       { name: 'Bench press', repeat: 4, steps: [
         { type: 'reps', label: 'Bench',  reps: 8, weighted: true, plannedWeight: 60 },
@@ -442,6 +454,9 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Plank circuit',
     desc: '3 sets · 60s plank · 30s rest',
+    description: `Three rounds of plank with short rests.
+• Plank (60s) — forearms on the ground, elbows under shoulders, body in a straight line, glutes and core squeezed. Don't sag at the hips.
+• Rest (30s) — stand, shake out shoulders, breathe.`,
     exercises: [{
       name: 'Plank',
       repeat: 3,
@@ -454,6 +469,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Tabata',
     desc: '8 rounds · 20s work · 10s rest',
+    description: `Classic HIIT protocol — 4 minutes total, all-out effort.
+• Work (20s) — pick one movement (burpees, squat jumps, mountain climbers, etc.) and go as hard as you can sustain.
+• Rest (10s) — stop, breathe, reset position.
+Repeat 8 times without breaks between rounds.`,
     exercises: [{
       name: 'HIIT',
       repeat: 8,
@@ -466,6 +485,9 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Push-ups',
     desc: '4 sets · 15 reps · 1 min rest · bodyweight',
+    description: `Standard push-up volume builder.
+• Push-ups (15) — hands under shoulders, body straight from heels to head, lower chest to ~1 fist off the ground, press back up. Elbows ~45° from torso.
+• Rest (60s) — shake out wrists and shoulders.`,
     exercises: [{
       name: 'Push-ups',
       repeat: 4,
@@ -479,6 +501,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Pull-Up Ladder',
     desc: '5 sets · descending reps 8→4 · 90s rest · bodyweight',
+    description: `Descending ladder: 8 → 7 → 6 → 5 → 4 reps.
+• Pull-ups — dead hang start, pull until chin clears the bar, lower under control. Avoid kipping.
+• Rest (90s between sets) — let grip recover, shake out.
+Stop a rep short of failure on each set; the volume comes from total quality reps.`,
     exercises: [8, 7, 6, 5, 4].map((reps, i, arr) => ({
       name: `Set ${i + 1}`,
       repeat: 1,
@@ -490,6 +516,9 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Dip Pyramid',
     desc: '6 sets · 3-5-7-7-5-3 reps · 90s rest',
+    description: `Pyramid scheme: 3 → 5 → 7 → 7 → 5 → 3 reps.
+• Dips — parallel bars, lock arms at top, lower until shoulders just below elbows (or to comfort), press up. Lean slightly forward for chest, stay vertical for triceps.
+• Rest (90s between sets) — keep wrists loose.`,
     exercises: [3, 5, 7, 7, 5, 3].map((reps, i, arr) => ({
       name: `Set ${i + 1}`,
       repeat: 1,
@@ -501,6 +530,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Push / Pull Superset',
     desc: '4 rounds · push-ups + pull-ups · 60s rest',
+    description: `Alternating push and pull with no rest between movements.
+• Push-ups (12) — clean reps, body rigid, full lockout at top.
+• Pull-ups (6) — straight into the bar, full hang to chin-over.
+• Rest (60s) — recover before next round.`,
     exercises: [{
       name: 'Superset',
       repeat: 4,
@@ -515,6 +548,11 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Dumbbell Full-Body Strength',
     desc: '4 exercises · 4 sets · weighted · 90s rest',
+    description: `Four compound dumbbell lifts, 4 sets each, 90s rest between sets.
+• Goblet squat (10) — hold one DB at chest, elbows tucked, sit straight down, knees tracking toes, drive up.
+• DB Romanian deadlift (10) — DBs in front of thighs, soft knees, hinge at hips, lower DBs along legs until hamstrings stretch, stand by squeezing glutes.
+• DB shoulder press (8) — seated or standing, press DBs overhead, lower to ear height under control.
+• DB row (10/arm) — hinge over, one DB per hand or single-arm braced, row DB to hip, squeeze lat.`,
     exercises: [
       { name: 'Goblet squat', repeat: 4, skipLastRest: true, steps: [
         { type: 'reps', label: 'Goblet squat', reps: 10, weighted: true, plannedWeight: 20 },
@@ -538,6 +576,13 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Hollow Body & Core',
     desc: '3 rounds · timed core circuit · 30s rest',
+    description: `Gymnastics-style core circuit, 3 rounds.
+• Hollow hold (30s) — on back, lower back pressed into floor, legs and shoulders lifted, arms by ears.
+• Plank (45s) — forearms or hands, body in a straight line, glutes squeezed.
+• Side plank right (30s) — bottom forearm under shoulder, hips lifted, body straight.
+• Side plank left (30s) — same on other side.
+• Dead bug (40s) — on back, arms up, knees over hips. Slowly lower opposite arm + leg, alternate.
+• Rest (30s) — relax low back.`,
     exercises: [{
       name: 'Core circuit',
       repeat: 3,
@@ -555,6 +600,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Pull-Up Bar Hang Progression',
     desc: '5 rounds · grip + scap work · 60s rest',
+    description: `Grip endurance + scapular strength, 5 rounds.
+• Dead hang (30s) — full grip on bar, shoulders relaxed but engaged, arms straight, feet off ground.
+• Active scapular pulls (8) — from dead hang, pull shoulder blades down/back without bending elbows; let them rise, repeat.
+• Rest (60s) — shake out hands and forearms.`,
     exercises: [{
       name: 'Hang & scap',
       repeat: 5,
@@ -569,6 +618,11 @@ const TRAINING_TEMPLATES = [
   {
     name: 'L-Sit Progression',
     desc: '5 sets · tuck/L-sit holds · 60s rest',
+    description: `Build static L-sit strength, 5 rounds on parallettes/bars/floor.
+• Tuck hold (20s) — support on hands, lift hips, knees pulled into chest.
+• One-leg right (10s) — from tuck, extend right leg straight, keep left tucked.
+• One-leg left (10s) — switch legs.
+• Rest (60s) — wrist circles, shake out.`,
     exercises: [{
       name: 'L-sit',
       repeat: 5,
@@ -584,6 +638,14 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Hip Mobility Flow',
     desc: '2 rounds · timed mobility · 60s between',
+    description: `Hip mobility sequence, 2 rounds.
+• 90/90 hip switch (60s) — seated with one leg in front at 90°, other to the side at 90°. Switch slowly side to side.
+• Pigeon right (45s) — right shin across in front, hips square, fold forward.
+• Pigeon left (45s) — same on left.
+• Cossack right (30s) — wide stance, shift weight to bent right leg, left leg straight, toes up.
+• Cossack left (30s) — switch sides.
+• Deep squat hold (60s) — feet flat, knees out, chest tall, elbows can push knees apart.
+• Rest (60s) — stand, shake out legs.`,
     exercises: [{
       name: 'Hip flow',
       repeat: 2,
@@ -602,6 +664,13 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Shoulder Prehab',
     desc: '3 rounds · DB shoulder routine · 45s rest',
+    description: `Light-weight shoulder health routine, 3 rounds.
+• Y-raise (12) — face-down on incline or hinge over; arms straight, lift into a Y, thumbs up.
+• T-raise (12) — same position, arms out into a T, squeeze mid-back.
+• External rotation right (10) — elbow at 90°, pinned to side; rotate forearm out.
+• External rotation left (10) — switch arms.
+• Wall slides (10) — back against wall, forearms on wall, slide arms overhead and back, keeping contact.
+• Rest (45s).`,
     exercises: [{
       name: 'Shoulder',
       repeat: 3,
@@ -619,6 +688,14 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Thoracic Spine Mobility',
     desc: '2 rounds · t-spine flow · 30s rest',
+    description: `Upper-back mobility flow, 2 rounds.
+• Cat-cow (60s) — quadruped, alternate rounding and arching the spine with breath.
+• Thread the needle right (45s) — from quadruped, slide right arm under left, shoulder and ear to floor.
+• Thread the needle left (45s) — switch.
+• Open book right (45s) — side-lying, knees stacked; open top arm to other side, follow with the gaze.
+• Open book left (45s) — switch.
+• Bar hang thoracic extension (30s) — hang from bar, push chest forward and look up.
+• Rest (30s).`,
     exercises: [{
       name: 'T-spine',
       repeat: 2,
@@ -637,6 +714,11 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Calisthenics Skill Practice',
     desc: '6 sets · skill work · 90s rest',
+    description: `Short, fresh skill holds — quality over fatigue. 6 rounds.
+• Tuck front lever (10s) — from hanging, pull body horizontal, knees tucked to chest.
+• Tuck back lever (10s) — face-down hanging, body horizontal, knees tucked.
+• Wall handstand (30s) — chest-to-wall preferred, hands shoulder-width, push the floor, body stacked.
+• Rest (90s) — full recovery before next attempt.`,
     exercises: [{
       name: 'Skills',
       repeat: 6,
@@ -652,6 +734,12 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Pike & Pancake Flexibility',
     desc: '3 rounds · lower-body flexibility · 30s rest',
+    description: `Hamstring + adductor flexibility, 3 rounds.
+• Pike forward fold (60s) — sit, legs straight together, hinge from hips, reach for feet, long spine.
+• Pancake straddle (60s) — sit, legs wide, hinge forward keeping back long, hands forward.
+• Hamstring lunge right (45s) — half-kneel, front leg straight, hinge over front leg.
+• Hamstring lunge left (45s) — switch.
+• Rest (30s).`,
     exercises: [{
       name: 'Flexibility',
       repeat: 3,
@@ -668,6 +756,9 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Pull-Up Strength (Weighted)',
     desc: '5 sets · 5 reps · weighted · 2 min rest',
+    description: `Heavy pull-up strength block, 5 × 5 with added weight (belt or vest).
+• Pull-ups (5) — dead hang each rep, pull until chin clears the bar, control descent. Pick a weight where the 5th rep is hard but clean.
+• Rest (2 min) — fully recover; quality > volume here.`,
     exercises: [{
       name: 'Weighted pull-ups',
       repeat: 5,
@@ -681,6 +772,9 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Dip Strength (Weighted)',
     desc: '5 sets · 5 reps · weighted · 2 min rest',
+    description: `Heavy dip strength block, 5 × 5 with added weight.
+• Dips (5) — lock at top, lower until shoulders just below elbows, press up powerfully. Lean forward slightly for chest emphasis.
+• Rest (2 min) — full recovery between sets.`,
     exercises: [{
       name: 'Weighted dips',
       repeat: 5,
@@ -694,6 +788,10 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Bodyweight EMOM (15 min)',
     desc: '15 rounds · 40s work / 20s rest · alternating',
+    description: `Every Minute On the Minute for 15 minutes, alternating push and pull.
+• Odd rounds — 8 pull-ups in the first 40s, rest the remaining time.
+• Even rounds — 12 push-ups in the first 40s, rest the remaining time.
+Pace yourself; if you can't finish the prescribed reps in 40s, reduce reps but keep the cadence.`,
     exercises: Array.from({ length: 15 }, (_, i) => {
       const isPull = i % 2 === 0;
       const isLast = i === 14;
@@ -710,6 +808,11 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Dumbbell Leg Day',
     desc: '4 exercises · 4 sets · weighted · 2 min rest',
+    description: `Lower-body strength with dumbbells, 4 sets per exercise.
+• DB front squat (8) — DBs on shoulders, elbows high, sit down between heels, drive up. 2 min rest.
+• Bulgarian split squat (8/leg) — rear foot elevated, DBs at sides, lower until front thigh parallel, drive through front heel. 2 min rest.
+• Single-leg RDL (8/leg) — DBs in hands, hinge on one leg, free leg straight behind, return to standing. 90s rest.
+• Calf raise (15) — feet on a step, lower heels below the step, push tall onto big toes. 60s rest.`,
     exercises: [
       { name: 'DB front squat', repeat: 4, skipLastRest: true, steps: [
         { type: 'reps', label: 'Front squat', reps: 8, weighted: true, plannedWeight: 20 },
@@ -734,6 +837,12 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Anti-Extension Core',
     desc: '4 rounds · dip-bar & DB core · 45s rest',
+    description: `Anti-extension / anti-rotation core, 4 rounds.
+• Hanging knee raise (10) — from a bar, hollow body, pull knees to chest, lower under control.
+• Dip-bar leg raise (10) — on parallel bars, support locked, raise straight or bent legs to 90°+.
+• Suitcase carry hold right (30s) — stand tall with a heavy DB in right hand, opposite shoulder square, brace.
+• Suitcase carry hold left (30s) — switch hands.
+• Rest (45s).`,
     exercises: [{
       name: 'Core',
       repeat: 4,
@@ -750,6 +859,13 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Wrist & Forearm Conditioning',
     desc: '3 rounds · timed wrist prep + grip · 30s rest',
+    description: `Wrist prep and grip work for handstand/calisthenics, 3 rounds.
+• Wrist circles (45s) — interlace fingers, draw large slow circles in both directions.
+• Quadruped wrist rocks palm down (45s) — hands flat on floor, fingers forward, rock weight forward/back.
+• Quadruped wrist rocks palm up (45s) — palms up, fingers toward knees, gently rock to load the wrist flexors.
+• Bar dead hang (30s) — full grip hang, relaxed shoulders.
+• DB wrist curl (12) — forearms on thighs, palms up, curl DB with wrist only.
+• Rest (30s).`,
     exercises: [{
       name: 'Wrists',
       repeat: 3,
@@ -767,6 +883,13 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Full-Body Calisthenics Circuit',
     desc: '4 rounds · push/pull/legs/core · 90s rest',
+    description: `Full-body bodyweight circuit, 4 rounds.
+• Pull-ups (6) — dead hang to chin over bar.
+• Dips (8) — full range, control descent.
+• Squat (15) — feet shoulder-width, sit to parallel or below, drive up.
+• Push-ups (12) — body straight, chest near floor, elbows ~45°.
+• Hanging knee raise (10) — bar hang, knees to chest, control lowering.
+• Rest (90s) — long enough to hit the reps fresh next round.`,
     exercises: [{
       name: 'Circuit',
       repeat: 4,
@@ -784,6 +907,17 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Cooldown & Full-Body Mobility',
     desc: '10-min wind-down flow · no rest',
+    description: `Slow, breath-led wind-down. Move into and out of each shape with control.
+• Child's pose (60s) — knees wide, big toes touching, sit hips back to heels, arms reached forward.
+• Downward dog (60s) — hands and feet on floor, push hips up and back, pedal heels if tight.
+• Low lunge right (45s) — right foot forward, left knee down, sink hips, arms up.
+• Low lunge left (45s) — switch sides.
+• Pigeon right (60s) — right shin across in front of hips, fold forward.
+• Pigeon left (60s) — switch.
+• Seated forward fold (60s) — legs together, hinge from hips, long spine.
+• Spinal twist right (45s) — sit, right knee crossed, twist torso right.
+• Spinal twist left (45s) — switch.
+• Dead hang decompression (30s) — full hang, let spine and shoulders stretch.`,
     exercises: [{
       name: 'Cooldown',
       repeat: 1,
@@ -804,6 +938,13 @@ const TRAINING_TEMPLATES = [
   {
     name: 'Forearm Training (Dumbbells)',
     desc: '6 exercises · flexors, extensors, grip · weighted',
+    description: `Comprehensive forearm hit: flexors, extensors, brachioradialis, grip.
+• Wrist curl (4 × 12) — forearms on thighs, palms up, DBs in hands. Let DBs roll to fingertips at the bottom, curl up with wrist only. 60s rest.
+• Reverse wrist curl (4 × 12) — palms down, knuckles toward you, raise DBs using wrist extensors. 60s rest.
+• Hammer curl (4 × 10/arm) — DBs at sides, palms facing each other. Curl up keeping palms neutral. 75s rest.
+• Reverse curl (4 × 10) — DBs in front, palms down, curl up keeping wrists straight. 60s rest.
+• Pronation / supination (3 × 12/arm) — elbow at 90° pinned to side, grip one end of DB; rotate forearm palm-up to palm-down. 60s rest.
+• Farmer hold (3 × 30s) — heavy DBs at sides, stand tall, brace, grip hard the whole time. 90s rest.`,
     exercises: [
       { name: 'Wrist curl', repeat: 4, steps: [
         { type: 'reps', label: 'Palms up', reps: 12, weighted: true, plannedWeight: 8 },
@@ -833,6 +974,34 @@ const TRAINING_TEMPLATES = [
       ]},
     ],
   },
+  {
+    name: 'Rice Bucket Forearms',
+    desc: '2 rounds · 7 timed drills in rice · 30s rest',
+    description: `Fill a deep bucket with uncooked rice. Bury your hand/forearm and work each drill against the rice resistance. Keep tension constant — don't let the hand "float". 2 rounds, switch hands as needed.
+• Open / close fists (45s) — bury hand deep, open fingers wide then squeeze into a tight fist. Continuous reps.
+• Finger extensions / spread (45s) — start with a closed fist in the rice, explosively spread fingers outward against the resistance.
+• Wrist curls — palms up (45s) — hand in rice palm facing up, flex wrist upward as if curling, then relax.
+• Reverse wrist curls — palms down (45s) — palm facing down, lift the back of the hand against the rice (wrist extension).
+• Pronation / supination (45s) — submerge forearm vertical, rotate palm up to palm down repeatedly.
+• Side-to-side wrist deviation (45s) — palm facing inward (thumb up), move hand toward thumb then toward pinky (radial/ulnar deviation).
+• Plunge & squeeze grip (45s) — pull hand out, plunge fingertips-first deep into rice, then squeeze a hard fist before withdrawing. Repeat.
+• Rest (30s) — between rounds, shake out hands and forearms.`,
+    exercises: [{
+      name: 'Rice bucket',
+      repeat: 2,
+      skipLastRest: true,
+      steps: [
+        { type: 'timed', label: 'Open / close fists',             duration: 45 },
+        { type: 'timed', label: 'Finger extensions (spread)',     duration: 45 },
+        { type: 'timed', label: 'Wrist curls (palms up)',         duration: 45 },
+        { type: 'timed', label: 'Reverse wrist curls (palms down)', duration: 45 },
+        { type: 'timed', label: 'Pronation / supination twists',  duration: 45 },
+        { type: 'timed', label: 'Side-to-side wrist deviation',   duration: 45 },
+        { type: 'timed', label: 'Plunge & squeeze grip',          duration: 45 },
+        { type: 'rest',  label: 'Rest', duration: 30 },
+      ],
+    }],
+  },
 ];
 
 function showTemplatePicker() {
@@ -844,10 +1013,13 @@ function showTemplatePicker() {
       <div class="summary">Pick a template — you can edit anything afterward.</div>
       <div class="template-list">
         ${TRAINING_TEMPLATES.map((t, i) => `
-          <button class="template-item" data-idx="${i}">
-            <strong>${escapeHtml(t.name)}</strong>
-            <span>${escapeHtml(t.desc)}</span>
-          </button>
+          <div class="template-item-row">
+            <button class="template-item" data-idx="${i}">
+              <strong>${escapeHtml(t.name)}</strong>
+              <span>${escapeHtml(t.desc)}</span>
+            </button>
+            ${t.description ? `<button class="template-info" data-info="${i}" aria-label="Details">i</button>` : ''}
+          </div>
         `).join('')}
       </div>
       <div class="row" style="justify-content: flex-end; margin-top: 1rem;">
@@ -858,6 +1030,13 @@ function showTemplatePicker() {
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay || e.target.dataset.act === 'close') {
       overlay.remove();
+      return;
+    }
+    const info = e.target.closest('.template-info');
+    if (info) {
+      e.stopPropagation();
+      const t = TRAINING_TEMPLATES[parseInt(info.dataset.info)];
+      showTemplateDescription(t);
       return;
     }
     const item = e.target.closest('.template-item');
@@ -872,6 +1051,25 @@ function showTemplatePicker() {
       exercises: cloned,
       _new: true,
     });
+  });
+  document.body.appendChild(overlay);
+}
+
+function showTemplateDescription(tmpl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'session-detail-overlay';
+  overlay.innerHTML = `
+    <div class="session-detail">
+      <h3>${escapeHtml(tmpl.name)}</h3>
+      <div class="summary">${escapeHtml(tmpl.desc || '')}</div>
+      <div class="template-description">${escapeHtml(tmpl.description || '')}</div>
+      <div class="row" style="justify-content: flex-end; margin-top: 1rem;">
+        <button data-act="close">Close</button>
+      </div>
+    </div>
+  `;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay || e.target.dataset.act === 'close') overlay.remove();
   });
   document.body.appendChild(overlay);
 }

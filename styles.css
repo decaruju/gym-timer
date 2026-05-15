@@ -247,6 +247,22 @@ input:focus, select:focus { outline: 1px solid var(--accent2); }
 .template-item strong { display: block; margin-bottom: 0.2rem; font-size: 0.95rem; }
 .template-item span { color: var(--muted); font-size: 0.8rem; }
 .template-item:hover, .template-item:active { background: #2d3344; border-color: var(--accent); }
+.template-item-row { display: flex; align-items: stretch; gap: 0.4rem; }
+.template-item-row .template-item { flex: 1; }
+.template-info {
+  flex: 0 0 auto;
+  width: 2rem;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-style: italic;
+  font-weight: bold;
+  font-family: serif;
+  cursor: pointer;
+}
+.template-info:hover, .template-info:active { background: #2d3344; border-color: var(--accent); color: var(--accent); }
+.template-description { white-space: pre-line; line-height: 1.45; color: var(--text); font-size: 0.9rem; margin-top: 0.5rem; }
 
 .weight-input { color: var(--accent2) !important; border-bottom-color: var(--accent2) !important; margin-top: 0.5rem; }
 
